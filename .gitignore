@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Excel — planilha fica fora do repositório; o app lê via URL/link
+*.xlsx
+*.xls
+
+# Streamlit — mantém o tema (.streamlit/config.toml) no repositório
+.streamlit/*.local
+
+# Vercel
+.vercel/
+
+# IDE
+.vscode/
+.idea/
