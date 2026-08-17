@@ -38,9 +38,9 @@ entregue o **arquivo** diretamente. Duas formas:
 **SharePoint Online (planilha compartilhada no Outlook/Teams)**
 
 1. Certifique-se de que o compartilhamento permita **"Qualquer pessoa com o link"** (modo **Exibir**).
-2. Use um dos formatos de download direto:
-   - `https://SUA-ORGANIZACAO.sharepoint.com/sites/NOME/_layouts/15/download.aspx?SourceUrl=/sites/NOME/Documentos%20Compartilhados/ARQUIVO.xlsx`
-   - ou, no link moderno, troque o final por `?download=1` e teste no navegador (se baixar o arquivo, funciona).
+2. Peça o link de compartilhamento (formato `:x:/g/...?e=...`) e acrescente **`&download=1`** no final.
+   - Exemplo real deste projeto:
+     `https://sesigoias-my.sharepoint.com/:x:/g/personal/ednilzapontes_senai_fieg_com_br/IQBG2JwB_-gXToj05nRpbJy8AQHJ_rpN34nSj1pfrEoOIOs?e=52nID4&download=1`
 
 3. Teste colando o link no navegador em uma aba anônima — se o arquivo `.xlsx` for baixado, o app vai conseguir ler.
 
@@ -53,7 +53,7 @@ entregue o **arquivo** diretamente. Duas formas:
 Defina a variável de ambiente (no Streamlit Cloud, em **Advanced settings → Secrets**):
 
 ```bash
-REGENCIA_EXCEL_URL=https://onedrive.live.com/download?resid=ABC123&authkey=!XYZ
+REGENCIA_EXCEL_URL=https://sesigoias-my.sharepoint.com/:x:/g/personal/ednilzapontes_senai_fieg_com_br/IQBG2JwB_-gXToj05nRpbJy8AQHJ_rpN34nSj1pfrEoOIOs?e=52nID4&download=1
 REGENCIA_REFRESH_MINUTES=10
 ```
 
