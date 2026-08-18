@@ -67,20 +67,29 @@ Também dá para usar o **upload manual** na barra lateral (sem configurar nada)
 
 A aba `CONSOLIDADO ` tem uma linha por instrutor com:
 
-- **DOCENTE**, **Ch** (carga horária) e **ÁREA**
+- **DOCENTE**, **Ch** (carga horária), **ÁREA** e **POLO/LOCAL** (local de regência)
 - **H/AULA** e **%** por mês (JAN a DEZ) — horas-aula realizadas e frequência (horas ÷ carga horária esperada no mês)
 - **ANO** (total de horas no ano), **MÉDIA** e **EXTRA-QUADRO**
 
 O `data_loader.py` localiza dinamicamente as colunas de cada mês pelos cabeçalhos da planilha e consolida tudo em um DataFrame mensal (`melt_monthly`).
 
+### Normalização de áreas e polo
+
+- O painel **unifica automaticamente** áreas com digitação/rótulos antigos (dicionário `AREA_NORM`):
+  `Manutenção automotiva (JD)` → `Manutenção automotiva`, `Contrução Civil` → `Construção Civil`,
+  `Grafica editorial` → `Gráfica editorial`.
+- O campo **POLO/LOCAL** é lido do cabeçalho da planilha se existir coluna `POLO`/`LOCAL`; se não
+  existir, é inferido: rótulo antigo "(JD)" → `Jardim Vila Boa (SEDUC)`; demais → `Vila Canaã`.
+  A coordenação pode adicionar a coluna `POLO` na planilha para controlar os valores oficialmente.
+
 ## O que o painel mostra
 
 - **KPIs**: nº de instrutores, horas-aula no período, frequência média, total anual
-- **Visão Geral**: frequência média por instrutor (top 15 de menor frequência, ranking completo nas abas seguintes), distribuição da frequência, horas por área
+- **Visão Geral**: frequência média por instrutor (top 15 de menor frequência, ranking completo nas abas seguintes), distribuição da frequência, horas por área e horas por polo
 - **Por Instrutor**: ranking completo de horas-aula e heatmap de frequência (instrutor × mês)
 - **Por Mês**: horas-aula totais por mês e evolução da frequência média
 - **Tabela**: dados consolidados com download em CSV
-- **Filtros**: por instrutor, área e meses, com botão "Limpar filtros"
+- **Filtros**: por instrutor, área, polo/local e meses, com botão "Limpar filtros"
 
 Cores da frequência: **azul institucional** para a maioria das barras e **vermelho SENAI** apenas para
 situações de alerta (frequência média abaixo de 50%).

@@ -601,18 +601,22 @@ def main():
 
     areas = sorted(df["AREA"].dropna().unique())
     docentes = sorted(df["DOCENTE"].dropna().unique())
+    polos = sorted(df["POLO"].dropna().unique())
 
     # ---------- Filtros ----------
     if "sel_docentes" not in st.session_state:
         st.session_state.sel_docentes = []
     if "sel_areas" not in st.session_state:
         st.session_state.sel_areas = []
+    if "sel_polos" not in st.session_state:
+        st.session_state.sel_polos = []
     if "sel_meses" not in st.session_state:
         st.session_state.sel_meses = MONTH_ORDER
 
     def reset_filters():
         st.session_state.sel_docentes = []
         st.session_state.sel_areas = []
+        st.session_state.sel_polos = []
         st.session_state.sel_meses = MONTH_ORDER
 
     with st.container(border=True):
@@ -620,11 +624,13 @@ def main():
             '<div class="filters-title">Filtros <span class="red">|</span> período analisado</div>',
             unsafe_allow_html=True,
         )
-        c_doc, c_area, c_mes, c_btn = st.columns([4, 3, 3, 2])
+        c_doc, c_area, c_polo, c_mes, c_btn = st.columns([3, 2.5, 2.5, 2.5, 1.5])
         with c_doc:
             st.multiselect("Instrutor(es)", docentes, key="sel_docentes", placeholder="Todos os instrutores")
         with c_area:
             st.multiselect("Área", areas, key="sel_areas", placeholder="Todas as áreas")
+        with c_polo:
+            st.multiselect("Polo / Local", polos, key="sel_polos", placeholder="Todos os polos")
         with c_mes:
             st.multiselect("Meses do período", MONTH_ORDER, key="sel_meses")
         with c_btn:
@@ -633,6 +639,7 @@ def main():
 
     sel_docentes = st.session_state.sel_docentes
     sel_areas = st.session_state.sel_areas
+    sel_polos = st.session_state.sel_polos
     sel_meses = st.session_state.sel_meses
 
     df_f = df.copy()
@@ -640,12 +647,16 @@ def main():
         df_f = df_f[df_f["DOCENTE"].isin(sel_docentes)]
     if sel_areas:
         df_f = df_f[df_f["AREA"].isin(sel_areas)]
+    if sel_polos:
+        df_f = df_f[df_f["POLO"].isin(sel_polos)]
 
     monthly_f = monthly[monthly["MES"].isin(sel_meses)].copy()
     if sel_docentes:
         monthly_f = monthly_f[monthly_f["DOCENTE"].isin(sel_docentes)]
     if sel_areas:
         monthly_f = monthly_f[monthly_f["AREA"].isin(sel_areas)]
+    if sel_polos:
+        monthly_f = monthly_f[monthly_f["POLO"].isin(sel_polos)]
 
     if df_f.empty:
         st.info("Nenhum dado corresponde aos filtros selecionados.")
@@ -742,6 +753,29 @@ def main():
                 )
                 fig3.update_layout(yaxis_title=None, height=330, xaxis=dict(tickformat=","))
                 chart_card(fig3, height=330, y_primary=True)
+
+            section_title("Horas-aula por polo")
+            polo_h = (
+                monthly_f.groupby("POLO")["HORAS"]
+                .sum()
+                .reset_index()
+                .sort_values("HORAS", ascending=False)
+            )
+            if not polo_h.empty:
+                fig4 = px.bar(
+                    polo_h,
+                    x="HORAS",
+                    y="POLO",
+                    orientation="h",
+                    labels={"HORAS": "Horas-aula", "POLO": ""},
+                )
+                fig4.update_traces(
+                    marker_color=COR_AZUL,
+                    marker_line_width=0,
+                    hovertemplate="<b>%{y}</b><br>%{x:,.0f} horas-aula<extra></extra>",
+                )
+                fig4.update_layout(yaxis_title=None, height=300, xaxis=dict(tickformat=","))
+                chart_card(fig4, height=300, y_primary=True)
 
     # ------------------------------------------------------------------
     # POR INSTRUTOR
@@ -860,7 +894,7 @@ def main():
     with tab_tabela:
         section_title("Dados consolidados")
         show = df_f.copy()
-        show_cols = ["DOCENTE", "CARGA_HORARIA", "AREA", "TOTAL_H_ANO", "EXTRA_QUADRO"]
+        show_cols = ["DOCENTE", "CARGA_HORARIA", "AREA", "POLO", "TOTAL_H_ANO", "EXTRA_QUADRO"]
         show_cols += [f"{m}_H_AULA" for m in MONTH_ORDER_ACRN]
         show_cols += [f"{m}_PCT" for m in MONTH_ORDER_ACRN]
         show = show[show_cols]

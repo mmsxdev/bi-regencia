@@ -35,6 +35,46 @@ HEADER_ROW = 4
 DAYWEEK_ROW = 5
 DATA_START = 6
 
+# ---------------------------------------------------------------------------
+# Normalização de áreas técnicas
+# ---------------------------------------------------------------------------
+# O painel unifica nomes duplicados/errôneos digitados na planilha para que a
+# análise por área não fique fragmentada. Ex.: "Manutenção automotiva (JD)"
+# era um rótulo interno do polo SEDUC (escola parceira Jardim Vila Boa) da
+# MESMA área. As chaves estão em MAIÚSCULO (comparação case-insensitive).
+AREA_NORM = {
+    "MANUTENÇÃO AUTOMOTIVA (JD)": "Manutenção automotiva",
+    "CONTRUÇÃO CIVIL": "Construção Civil",
+    "GRAFICA EDITORIAL": "Gráfica editorial",
+}
+
+# Polo/local de regência
+# - Se a planilha tiver uma coluna POLO/LOCAL (na linha de cabeçalho), ela é lida.
+# - Se não existir (ou célula vazia), o valor é inferido a partir do rótulo antigo:
+#   "(JD)" -> polo da escola parceira; demais -> unidade-base (Vila Canaã).
+# Recomenda-se que a coordenação preencha POLO/LOCAL para todos os instrutores.
+POLO_DEFAULT = "Vila Canaã"
+POLO_JD_LEGACY = "Jardim Vila Boa (SEDUC)"
+POLO_HEADERS = ("POLO", "LOCAL", "LOCAL DE REGÊNCIA", "LOCAL DE REGENCIA", "POLO/LOCAL", "POLO / LOCAL")
+
+
+def _norm_area(value):
+    """Normaliza nomes de área (remove espaços, acertos de digitação e duplicados)."""
+    s = str(value).strip() if value is not None and not (isinstance(value, float) and pd.isna(value)) else ""
+    if not s:
+        return "SEM ÁREA"
+    return AREA_NORM.get(s.upper(), s)
+
+
+def _find_polo_column(header4: list):
+    """Localiza a coluna POLO/LOCAL na linha de cabeçalho (se existir)."""
+    for i, v in enumerate(header4):
+        if isinstance(v, str):
+            up = v.strip().upper()
+            if up in POLO_HEADERS or up.startswith("POLO"):
+                return i
+    return None
+
 
 def _to_num(value):
     if value is None:
@@ -77,6 +117,7 @@ def load_regencia(source) -> pd.DataFrame:
 
     month_cols = _find_month_columns(header4)
     labels = _locate_labels(header4)
+    polo_col = _find_polo_column(header4)
 
     rows = []
     for idx in range(DATA_START, len(df)):
@@ -84,7 +125,17 @@ def load_regencia(source) -> pd.DataFrame:
         if pd.isna(nome):
             continue
         ch = df.iloc[idx, 1]
-        area = df.iloc[idx, 2]
+        area_raw = df.iloc[idx, 2]
+        area = _norm_area(area_raw)
+        area_upper = str(area_raw).strip().upper() if pd.notna(area_raw) else ""
+
+        polo = None
+        if polo_col is not None:
+            v = df.iloc[idx, polo_col]
+            polo = str(v).strip() if pd.notna(v) and str(v).strip() else None
+        if not polo:
+            # Inferência: rótulo antigo (JD) = polo da escola parceira SEDUC
+            polo = POLO_JD_LEGACY if "(JD)" in area_upper else POLO_DEFAULT
 
         carga = None
         if pd.notna(ch):
@@ -96,7 +147,8 @@ def load_regencia(source) -> pd.DataFrame:
         record = {
             "DOCENTE": str(nome).strip().upper(),
             "CARGA_HORARIA": carga,
-            "AREA": str(area).strip() if pd.notna(area) else "SEM ÁREA",
+            "AREA": area,
+            "POLO": polo,
         }
 
         total_ano = None
@@ -123,7 +175,7 @@ def load_regencia(source) -> pd.DataFrame:
 
 
 def melt_monthly(df: pd.DataFrame) -> pd.DataFrame:
-    id_vars = ["DOCENTE", "CARGA_HORARIA", "AREA", "TOTAL_H_ANO", "EXTRA_QUADRO"]
+    id_vars = ["DOCENTE", "CARGA_HORARIA", "AREA", "POLO", "TOTAL_H_ANO", "EXTRA_QUADRO"]
     month_map = {f"{m}_H_AULA": MONTH_LABELS[i] for i, m in enumerate(MONTHS)}
     value_cols = list(month_map.keys())
     melted = df.melt(id_vars=id_vars, value_vars=value_cols, var_name="MES_COL", value_name="HORAS")
