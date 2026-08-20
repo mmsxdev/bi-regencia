@@ -1,5 +1,6 @@
 import io
 import os
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import pandas as pd
 import plotly.express as px
@@ -514,9 +515,33 @@ def chart_card(fig, height=None, y_primary=False, scroll_height=None):
 # ---------------------------------------------------------------------------
 # Fonte de dados (arquivo local / link SharePoint / upload)
 # ---------------------------------------------------------------------------
+# Um link de compartilhamento do SharePoint (formato ?e=CODIGO) entrega uma
+# página HTML de visualização, não o arquivo. Forçamos download=1 para estar
+# imunizado mesmo que o link seja colado sem o sufixo.
+SHAREPOINT_HOSTS = ("sharepoint.com", "sharepoint-df.com", "sharepoint.cn")
+
+
+def _force_download(url):
+    u = urlparse(url)
+    if any(u.netloc.lower().endswith(h) for h in SHAREPOINT_HOSTS):
+        q = parse_qs(u.query)
+        if "download" not in q:
+            q["download"] = ["1"]
+            u = u._replace(query=urlencode(q, doseq=True))
+            return urlunparse(u)
+    return url
+
+
 def _download(url):
-    resp = requests.get(url, timeout=90, headers={"User-Agent": "Mozilla/5.0"})
+    resp = requests.get(_force_download(url), timeout=30, headers={"User-Agent": "Mozilla/5.0"})
     resp.raise_for_status()
+    if resp.content[:2] != b"PK":
+        raise ValueError(
+            "O link não entregou a planilha (.xlsx). Você colou um link do "
+            "SharePoint/OneDrive sem o sufixo de download. O app precisa de um "
+            "link do tipo ...&download=1 (pede o link de compartilhamento e "
+            "acrescenta &download=1 no final — teste numa aba anônima)."
+        )
     return io.BytesIO(resp.content)
 
 
@@ -541,7 +566,17 @@ def load_from_upload(uploaded):
 
 def get_data():
     if EXCEL_URL:
-        return load_from_url(EXCEL_URL), "URL (SharePoint/OneDrive)"
+        try:
+            return load_from_url(EXCEL_URL), "URL (SharePoint/OneDrive)"
+        except Exception as exc:
+            st.error(
+                f"Não foi possível baixar a planilha pelo link configurado "
+                f"(REGENCIA_EXCEL_URL).\n\nDetalhe: {exc}\n\n"
+                "- Confira se o link no Streamlit Cloud termina com `&download=1` "
+                "(ou `?download=1`) e teste-o numa aba anônima.\n"
+                "- Se preferir, use o arquivo local ou o upload pela barra lateral."
+            )
+            return None, "URL (falhou)"
     if os.path.exists(EXCEL_PATH):
         return load_from_file(EXCEL_PATH), "arquivo local"
     return None, "nenhuma"
