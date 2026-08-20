@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Gera o PowerPoint de apresentacao do BI de Regência (SENAI Vila Canaã).
+Gera o PowerPoint de apresentacao do BI de Regência (Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas).
 
 Uso:
     python gerar_ppt.py
@@ -159,14 +159,14 @@ def s_capa():
     rect(s, Inches(0), Inches(0), SW, SH, fill=BG)
     rect(s, Inches(0), Inches(2.55), SW, Inches(0.06), fill=BORDA)
     text(s, Inches(0.8), Inches(2.2), Inches(11.5), Inches(0.5),
-         [([("SENAI · SERVIÇO NACIONAL DE APRENDIZAGEM INDUSTRIAL", 16, True, SEC)], 0, PP_ALIGN.LEFT)])
+         [([("Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas", 16, True, SEC)], 0, PP_ALIGN.LEFT)])
     text(s, Inches(0.8), Inches(2.78), Inches(11.7), Inches(1.3),
          [([("BI DE REGÊNCIA", 52, True, TXT)], 0, PP_ALIGN.LEFT)])
     text(s, Inches(0.8), Inches(3.55), Inches(11.7), Inches(0.6),
-         [([("Frequência dos instrutores em sala de aula — quadro 2026", 22, False, AZUL)], 0, PP_ALIGN.LEFT)])
+         [([("Regência dos instrutores em sala de aula — quadro 2026", 22, False, AZUL)], 0, PP_ALIGN.LEFT)])
     rect(s, Inches(0.8), Inches(4.4), Inches(4.4), Inches(0.045), fill=RED)
     text(s, Inches(0.8), Inches(4.75), Inches(11.7), Inches(0.5),
-         [([("Escola SENAI Vila Canaã · Departamento Regional de Goiás", 15, False, SEC)], 0, PP_ALIGN.LEFT)])
+         [([("Departamento Regional de Goiás", 15, False, SEC)], 0, PP_ALIGN.LEFT)])
     text(s, Inches(0.8), Inches(5.25), Inches(11.7), Inches(0.4),
          [([("Relatório de dados consolidados da planilha de regência", 13, False, TER)], 0, PP_ALIGN.LEFT)])
 
@@ -182,9 +182,9 @@ def s_objetivo():
     ], size=17, gap=14)
     rect(s, Inches(0.55), Inches(4.55), Inches(12.2), Inches(0.045), fill=BORDA)
     text(s, Inches(0.55), Inches(4.8), Inches(12.2), Inches(0.45),
-         [([("Conceito-chave — Frequência:", 16, True, TXT)], 0, PP_ALIGN.LEFT)])
+         [([("Conceito-chave — Regência:", 16, True, TXT)], 0, PP_ALIGN.LEFT)])
     bullets(s, Inches(0.55), Inches(5.35), Inches(12.2), Inches(1.6), [
-        "Frequência (%) = horas-aula realizadas ÷ carga de regência esperada no mês.",
+        "Regência (%) = horas-aula realizadas ÷ carga de regência esperada no mês.",
         "100% = cumprida a carga. Acima de 100% = ministrou acima do previsto. Abaixo de 50% = alerta.",
     ], size=15, gap=8)
 
@@ -213,7 +213,7 @@ def s_kpis():
     kpi_card(s, Inches(0.55), Inches(1.5), Inches(2.9), Inches(2.3),
              "INSTRUTORES NO QUADRO", "45", "Cobertura completa desde agosto")
     kpi_card(s, Inches(3.65), Inches(1.5), Inches(2.9), Inches(2.3),
-             "FREQUÊNCIA MÉDIA", "61%", "média das frequências mensais", RGBColor(0xA3, 0xE6, 0x35))
+             "REGÊNCIA MÉDIA", "61%", "média das regências mensais", RGBColor(0xA3, 0xE6, 0x35))
     kpi_card(s, Inches(6.75), Inches(1.5), Inches(2.9), Inches(2.3),
              "HORAS-AULA REALIZADAS", "37,3 mil", "soma dos 12 meses do período")
     kpi_card(s, Inches(9.85), Inches(1.5), Inches(2.9), Inches(2.3),
@@ -222,7 +222,7 @@ def s_kpis():
          [([("Leitura: a média de 61% esconde realidades distintas — parte do quadro cumpre bem a carga, outra parte está em zona crítica.",
              15, False, SEC)], 0, PP_ALIGN.LEFT)], anchor=MSO_ANCHOR.MIDDLE)
     bullets(s, Inches(0.55), Inches(5.05), Inches(12.2), Inches(1.8), [
-        "16 instrutores entre 70% e 100% de frequência.",
+        "16 instrutores entre 70% e 100% de regência.",
         "2 instrutores acima de 100% (ministram acima da carga prevista).",
         "15 instrutores entre 50% e 70% — área de atenção/monitoramento.",
     ], size=14, gap=8)
@@ -230,7 +230,7 @@ def s_kpis():
 
 def s_sazonalidade():
     s = add_slide()
-    title_bar(s, "Sazonalidade — frequência por mês", "Cair em julho não é risco, é calendário")
+    title_bar(s, "Sazonalidade — regência por mês", "Cair em julho não é risco, é calendário")
     pic_fit(s, os.path.join(GRAF, "mes_frequencia_line.png"),
             Inches(0.5), Inches(1.35), Inches(7.3), Inches(4.9))
     bullets(s, Inches(8.1), Inches(1.5), Inches(4.7), Inches(5.0), [
@@ -257,7 +257,7 @@ def s_volume():
 
 def s_distribuicao():
     s = add_slide()
-    title_bar(s, "Distribuição da frequência média", "Onde o quadro se concentra")
+    title_bar(s, "Distribuição da regência média", "Onde o quadro se concentra")
     pic_fit(s, os.path.join(GRAF, "distribuicao_hist.png"),
             Inches(0.5), Inches(1.35), Inches(7.0), Inches(4.9))
     bullets(s, Inches(7.9), Inches(1.55), Inches(5.0), Inches(5.0), [
@@ -272,7 +272,7 @@ def s_distribuicao():
 
 def s_area():
     s = add_slide()
-    title_bar(s, "Frequência média por área", "Risco é concentrado, não está espalhado")
+    title_bar(s, "Regência média por área", "Risco é concentrado, não está espalhado")
     pic_fit(s, os.path.join(GRAF, "area_freq_bar.png"),
             Inches(0.5), Inches(1.35), Inches(7.6), Inches(5.0))
     bullets(s, Inches(8.35), Inches(1.55), Inches(4.5), Inches(5.0), [
@@ -287,7 +287,7 @@ def s_area():
 
 def s_atencoes():
     s = add_slide()
-    title_bar(s, "Pontos de atenção — menores frequências", "Identificados por nome e área")
+    title_bar(s, "Pontos de atenção — menores regências", "Identificados por nome e área")
     pic_fit(s, os.path.join(GRAF, "instrutores_menor.png"),
             Inches(0.5), Inches(1.35), Inches(7.6), Inches(5.0))
     bullets(s, Inches(8.35), Inches(1.55), Inches(4.5), Inches(5.0), [
@@ -308,8 +308,8 @@ def s_automotiva():
     bullets(s, Inches(8.15), Inches(1.45), Inches(4.7), Inches(5.4), [
         "As \"Manutenção automotiva\" e \"(JD)\" foram unificadas em UMA área: 13 instrutores.",
         "(JD) = polo do treinamento John Deere (mesma área, em outro local).",
-        "Frequência média da área: ~46% — 7 de 13 abaixo de 50%.",
-        ("Novo filtro POLO/LOCAL: separa Vila Canaã × John Deere sem fragmentar a área.", True, AZUL, 0),
+        "Regência média da área: ~46% — 7 de 13 abaixo de 50%.",
+        ("Novo filtro POLO/LOCAL: separa Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas × John Deere sem fragmentar a área.", True, AZUL, 0),
         "O painel lê a coluna POLO/LOCAL da planilha, se existir; senão, infere pelo rótulo antigo.",
         "Recomendação: preencher POLO/LOCAL para todos os instrutores na planilha-fonte.",
     ], size=13, gap=9)
@@ -317,11 +317,11 @@ def s_automotiva():
 
 def s_destaques():
     s = add_slide()
-    title_bar(s, "Destaques do quadro", "Referências internas de alta frequência")
+    title_bar(s, "Destaques do quadro", "Referências internas de alta regência")
     pic_fit(s, os.path.join(GRAF, "instrutores_maior.png"),
             Inches(0.5), Inches(1.35), Inches(7.6), Inches(5.0))
     bullets(s, Inches(8.35), Inches(1.55), Inches(4.5), Inches(5.0), [
-        "ROMULO FLORIANO LIMEIRA: 109,5% — maior frequência (1.314 h).",
+        "ROMULO FLORIANO LIMEIRA: 109,5% — maior regência (1.314 h).",
         "BRUNA ARIEL DIAS GUARIGLIA: 103,8% (1.495 h).",
         "LEIDINA LAIS: 1.552 h no ano — maior volume, na própria área crítica.",
         ("Usar esses casos como referência de planejamento de carga.", True, AZUL, 0),
@@ -330,11 +330,11 @@ def s_destaques():
 
 def s_heatmap():
     s = add_slide()
-    title_bar(s, "Visão 360° — heatmap instrutor × mês", "Frequência célula a célula")
+    title_bar(s, "Visão 360° — heatmap instrutor × mês", "Regência célula a célula")
     pic_fit(s, os.path.join(GRAF, "heatmap.png"),
             Inches(0.5), Inches(1.35), Inches(7.6), Inches(5.4))
     bullets(s, Inches(8.35), Inches(1.55), Inches(4.5), Inches(5.4), [
-        "Cada célula = frequência de um instrutor em um mês.",
+        "Cada célula = regência de um instrutor em um mês.",
         "Colunas fracas em JAN/JUL/DEZ: sazonalidade.",
         "Linhas persistentemente vermelhas: caso de gestão.",
         "Células vazias = mês sem lançamento (conferir preenchimento).",
@@ -361,11 +361,11 @@ def s_plano():
     s = add_slide()
     title_bar(s, "Plano de ação proposto", "Fechamento com decisões")
     bullets(s, Inches(0.6), Inches(1.4), Inches(12.2), Inches(4.6), [
-        ("1. Validar com a coordenação os casos de baixa frequência (quem, por quê, o que fazer).", True, TXT, 0),
+        ("1. Validar com a coordenação os casos de baixa regência (quem, por quê, o que fazer).", True, TXT, 0),
         ("    · Prioridade: Manutenção automotiva (7 de 13 abaixo de 50%).", False, SEC, 1),
         ("2. Padronizar a planilha-fonte: nomes de área, totais anuais, lançamentos mensais completos.", True, TXT, 0),
         ("    · Registrar POLO/LOCAL na planilha-fonte (ex.: polo \"John Deere\").", False, SEC, 1),
-        ("3. Definir metas de frequência por período (respeitando férias e sazonalidade).", True, TXT, 0),
+        ("3. Definir metas de regência por período (respeitando férias e sazonalidade).", True, TXT, 0),
         ("4. Acompanhamento mensal com o painel — reavaliar o mesmo indicador.", True, TXT, 0),
     ], size=16, gap=14)
     text(s, Inches(0.6), Inches(6.4), Inches(12.2), Inches(0.7),

@@ -46,9 +46,9 @@ def fill(doc):
         return p
 
     # Cabeçalho
-    para("SENAI · SERVIÇO NACIONAL DE APRENDIZAGEM INDUSTRIAL", 9, True, GRAY)
+    para("Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas", 9, True, GRAY)
     para("BI DE REGÊNCIA — SÍNTESE EXECUTIVA", 21, True, RED, WD_ALIGN_PARAGRAPH.LEFT, 2)
-    para("Frequência dos instrutores em sala de aula · Escola SENAI Vila Canaã · Quadro 2026",
+    para("Regência dos instrutores em sala de aula · Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas · Quadro 2026",
          11, False, DARK, WD_ALIGN_PARAGRAPH.LEFT, 10)
 
     # Ficha de indicadores
@@ -56,7 +56,7 @@ def fill(doc):
     table.style = "Table Grid"
     dados = [
         ("INSTRUTORES", "45", "no quadro (total desde ago/26)"),
-        ("FREQUÊNCIA MÉDIA", "61%", "média das frequências mensais"),
+        ("REGÊNCIA MÉDIA", "61%", "média das regências mensais"),
         ("HORAS-AULA", "37,3 mil", "soma dos 12 meses (2026)"),
         ("ABAIXO DE 50%", "12 instr.", "27% do quadro em alerta"),
     ]
@@ -107,7 +107,7 @@ def fill(doc):
     heading("PRINCIPAIS ACHADOS (2026)")
     bullet("soma dos meses (37.306 h) difere da coluna ANO (36.458 h) — padronizar cálculo na planilha.",
            "Dois totais: ")
-    bullet("12 instrutores (27%) abaixo de 50% de frequência; 2 acima de 100% (referência).", "Alerta: ")
+    bullet("12 instrutores (27%) abaixo de 50% de regência; 2 acima de 100% (referência).", "Alerta: ")
     bullet("área unificada (13 instrutores), 7 abaixo de 50% — prioridade com a coordenação.",
            "Manutenção automotiva: ")
     bullet("julho (18% — férias), janeiro (41%) e dezembro (37%); base produtiva: mar–set (78–82%).",
@@ -118,11 +118,11 @@ def fill(doc):
            "Manutenção automotiva); falta preencher POLO/LOCAL na planilha para todos.", "Qualidade dos dados: ")
 
     heading("PLANO DE AÇÃO")
-    bullet("validar casos de baixa frequência (por que, o que fazer) — prioridade Manutenção automotiva.",
+    bullet("validar casos de baixa regência (por que, o que fazer) — prioridade Manutenção automotiva.",
            "1) ")
     bullet("padronizar planilha: preencher POLO/LOCAL (já suportado pelo BI), totais anuais e "
            "lançamentos mensais.", "2) ")
-    bullet("definir metas de frequência por período, respeitando férias e sazonalidade.", "3) ")
+    bullet("definir metas de regência por período, respeitando férias e sazonalidade.", "3) ")
     bullet("acompanhamento mensal no painel, com reavaliação do mesmo indicador.", "4) ")
 
     para("", size=4, space_after=4)

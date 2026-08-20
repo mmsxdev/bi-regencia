@@ -89,7 +89,7 @@ def main():
     fcols = [m + "_PCT" for m in ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]]
     hcols = [m + "_H_AULA" for m in ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]]
 
-    # 1) Frequencia media por mes (linha)
+    # 1) Regência média por mês (linha)
     mes_p = monthly.groupby("MES", observed=True)["PCT"].mean().reset_index()
     mes_p["PCT%"] = (mes_p["PCT"] * 100).round(1)
     fig = px.line(mes_p, x="MES", y="PCT%", markers=True,
@@ -97,7 +97,7 @@ def main():
     fig.update_traces(line=dict(width=4), marker=dict(size=10),
                       text=mes_p["PCT%"], textposition="top center",
                       textfont=dict(color=TEXTO, size=12),
-                      hovertemplate="<b>%{x}</b><br>Frequência: %{y:.1f}%<extra></extra>")
+                      hovertemplate="<b>%{x}</b><br>Regência: %{y:.1f}%<extra></extra>")
     fig.update_yaxes(tickformat="", range=[0, 95], ticksuffix="%")
     fig.add_hline(y=61.0, line_dash="dash", line_color=TEXTO_SEC,
                   annotation_text="Média do ano: 61%", annotation_position="bottom right",
@@ -115,7 +115,7 @@ def main():
     fig.update_yaxes(tickformat=",", range=[0, mes_h["HORAS"].max() * 1.15])
     save(style(fig, width=1280, height=640), "mes_horas_bar.png")
 
-    # 3) Distribuicao da frequencia media (histograma)
+    # 3) Distribuição da regência média (histograma)
     df2 = df.copy()
     df2["FREQ_MEDIA"] = df2[fcols].mean(axis=1) * 100
     import numpy as np
@@ -125,14 +125,14 @@ def main():
     centers = (edges[:-1] + edges[1:]) / 2
     width = edges[1] - edges[0]
     fig = px.bar(x=centers, y=counts,
-                 labels={"x": "Frequência média (%)", "y": "Instrutores"})
+                 labels={"x": "Regência média (%)", "y": "Instrutores"})
     fig.update_traces(width=width, marker_color=[freq_color(c) for c in centers],
                       marker_line_color=BG, marker_line_width=1,
-                      hovertemplate="Frequência: %{x:.0f}%<br>Instrutores: %{y}<extra></extra>")
+                      hovertemplate="Regência: %{x:.0f}%<br>Instrutores: %{y}<extra></extra>")
     fig.update_yaxes(dtick=1)
     save(style(fig, width=900, height=560), "distribuicao_hist.png")
 
-    # 4) Frequencia media por area (barras horizontais)
+    # 4) Regência média por área (barras horizontais)
     area = df2.groupby("AREA").agg(n=("DOCENTE", "count"), f=("FREQ_MEDIA", "mean")).reset_index()
     area = area.sort_values("f")
     fig = px.bar(area, x="f", y="AREA", orientation="h",
@@ -143,7 +143,7 @@ def main():
     fig.update_xaxes(range=[0, 90], ticksuffix="%")
     save(style(fig, width=1100, height=600), "area_freq_bar.png")
 
-    # 5) 10 menores frequencias
+    # 5) 10 menores regências
     low = df2.sort_values("FREQ_MEDIA").head(10)
     fig = px.bar(low, x="FREQ_MEDIA", y="DOCENTE", orientation="h",
                  text=low["FREQ_MEDIA"].apply(lambda v: f"{v:.1f}%"))
@@ -153,7 +153,7 @@ def main():
     fig.update_xaxes(range=[0, 60], ticksuffix="%")
     save(style(fig, width=1100, height=620), "instrutores_menor.png")
 
-    # 6) 10 maiores frequencias
+    # 6) 10 maiores regências
     high = df2.sort_values("FREQ_MEDIA", ascending=False).head(10)
     fig = px.bar(high, x="FREQ_MEDIA", y="DOCENTE", orientation="h",
                  text=high["FREQ_MEDIA"].apply(lambda v: f"{v:.1f}%"))
@@ -184,7 +184,7 @@ def main():
         texttemplate="%{text:.0f}",
         textfont=dict(size=10, color=TEXTO),
         colorbar=dict(title="%", tickfont=dict(color=TEXTO_SEC)),
-        hovertemplate="<b>%{y}</b> - %{x}<br>Frequência: %{z:.1f}%<extra></extra>",
+        hovertemplate="<b>%{y}</b> - %{x}<br>Regência: %{z:.1f}%<extra></extra>",
     ))
     fig.update_layout(font=dict(family="Inter, Segoe UI", color=TEXTO, size=13),
                       width=1400, height=1000, paper_bgcolor=BG, plot_bgcolor=BG,
@@ -197,11 +197,13 @@ def main():
     auto = df2[df2["AREA"] == "Manutenção automotiva"].copy()
     auto = auto.sort_values("FREQ_MEDIA")
     auto["GRUPO"] = auto["POLO"].apply(
-        lambda p: "Polo John Deere" if "Deere" in str(p) else "Vila Canaã"
+        lambda p: "Polo John Deere" if "Deere" in str(p)
+        else "Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas"
     )
     fig = px.bar(auto, x="FREQ_MEDIA", y="DOCENTE", orientation="h",
                  color="GRUPO",
-                 color_discrete_map={"Vila Canaã": COR_AZUL_CLARO, "Polo John Deere": COR_VERMELHO},
+                 color_discrete_map={"Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas": COR_AZUL_CLARO,
+                                     "Polo John Deere": COR_VERMELHO},
                  text=auto["FREQ_MEDIA"].apply(lambda v: f"{v:.1f}%"))
     fig.update_traces(textposition="outside", textfont=dict(color=TEXTO, size=11),
                       hovertemplate="<b>%{y}</b><br>%{x:.1f}%<extra></extra>")

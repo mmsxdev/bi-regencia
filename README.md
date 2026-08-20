@@ -1,6 +1,6 @@
-# BI de Regência — Frequência de Instrutores em Sala de Aula
+# BI de Regência — Regência de Instrutores em Sala de Aula
 
-Dashboard interativo em **Streamlit** que analisa a frequência (horas-aula) dos instrutores do quadro usando a aba `CONSOLIDADO ` da planilha de regência.
+Dashboard interativo em **Streamlit** que analisa a regência (horas-aula) dos instrutores do quadro usando a aba `CONSOLIDADO ` da planilha de regência.
 
 ## Como rodar localmente
 
@@ -68,7 +68,7 @@ Também dá para usar o **upload manual** na barra lateral (sem configurar nada)
 A aba `CONSOLIDADO ` tem uma linha por instrutor com:
 
 - **DOCENTE**, **Ch** (carga horária), **ÁREA** e **POLO/LOCAL** (local de regência)
-- **H/AULA** e **%** por mês (JAN a DEZ) — horas-aula realizadas e frequência (horas ÷ carga horária esperada no mês)
+- **H/AULA** e **%** por mês (JAN a DEZ) — horas-aula realizadas e regência (horas ÷ carga horária esperada no mês)
 - **ANO** (total de horas no ano), **MÉDIA** e **EXTRA-QUADRO**
 
 O `data_loader.py` localiza dinamicamente as colunas de cada mês pelos cabeçalhos da planilha e consolida tudo em um DataFrame mensal (`melt_monthly`).
@@ -79,20 +79,20 @@ O `data_loader.py` localiza dinamicamente as colunas de cada mês pelos cabeçal
   `Manutenção automotiva (JD)` → `Manutenção automotiva`, `Contrução Civil` → `Construção Civil`,
   `Grafica editorial` → `Gráfica editorial`.
 - O campo **POLO/LOCAL** é lido do cabeçalho da planilha se existir coluna `POLO`/`LOCAL`; se não
-  existir, é inferido: rótulo antigo "(JD)" → `John Deere`; demais → `Vila Canaã`.
+  existir, é inferido: rótulo antigo "(JD)" → `John Deere`; demais → `Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas`.
   A coordenação pode adicionar a coluna `POLO` na planilha para controlar os valores oficialmente.
 
 ## O que o painel mostra
 
-- **KPIs**: nº de instrutores, horas-aula no período, frequência média, total anual
-- **Visão Geral**: frequência média por instrutor (top 15 de menor frequência, ranking completo nas abas seguintes), distribuição da frequência, horas por área e horas por polo
-- **Por Instrutor**: ranking completo de horas-aula e heatmap de frequência (instrutor × mês)
-- **Por Mês**: horas-aula totais por mês e evolução da frequência média
+- **KPIs**: nº de instrutores, horas-aula no período, regência média, total anual
+- **Visão Geral**: regência média por instrutor (top 15 de menor regência, ranking completo nas abas seguintes), distribuição da regência, horas por área e horas por polo
+- **Por Instrutor**: ranking completo de horas-aula e heatmap de regência (instrutor × mês)
+- **Por Mês**: horas-aula totais por mês e evolução da regência média
 - **Tabela**: dados consolidados com download em CSV
 - **Filtros**: por instrutor, área, polo/local e meses, com botão "Limpar filtros"
 
-Cores da frequência: **azul institucional** para a maioria das barras e **vermelho SENAI** apenas para
-situações de alerta (frequência média abaixo de 50%).
+Cores da regência: **azul institucional** para a maioria das barras e **vermelho SENAI** apenas para
+situações de alerta (regência média abaixo de 50%).
 
 ## Deploy
 

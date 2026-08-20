@@ -1,3 +1,4 @@
+import base64
 import io
 import os
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
@@ -28,6 +29,15 @@ COR_AZUL_CLARO = "#2E90FA"
 
 PLOTLY_CONFIG = {"displayModeBar": False, "displaylogo": False}
 
+# ---------------------------------------------------------------------------
+# Identificação da instituição
+# ---------------------------------------------------------------------------
+INSTITUICAO = "Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas"
+LOGO_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "SENAI (5)", "SENAI", "png", "marca_SENAI_2024_reduzida negativada.png",
+)
+
 FREQ_STOPS = [
     (0.00, "#B91C1C"),
     (0.20, "#D71920"),
@@ -41,7 +51,7 @@ FREQ_STOPS = [
 FREQ_COLORSCALE = [[pos, color] for pos, color in FREQ_STOPS]
 
 st.set_page_config(
-    page_title="BI de Regência - Frequência de Instrutores",
+    page_title="BI de Regência - Regência de Instrutores",
     layout="wide",
 )
 
@@ -59,6 +69,15 @@ MONTH_ORDER_ACRN = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET
 def _hex2rgb(h):
     h = h.lstrip("#")
     return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
+
+
+def _logo_data_uri():
+    """Codifica a logo (PNG) como data URI para embutir no cabeçalho (HTML)."""
+    try:
+        with open(LOGO_PATH, "rb") as f:
+            return "data:image/png;base64," + base64.b64encode(f.read()).decode("ascii")
+    except Exception:
+        return ""
 
 
 def freq_color(pct):
@@ -117,15 +136,20 @@ def inject_css():
         }}
         .senai-header .brand-line {{
             display: flex;
-            align-items: baseline;
+            align-items: center;
             gap: 12px;
         }}
+        .senai-header .brand-logo {{
+            height: 34px;
+            width: auto;
+            display: block;
+        }}
         .senai-header .brand {{
-            font-size: 22px;
+            font-size: 14px;
             font-weight: 800;
-            letter-spacing: 5px;
-            color: {COR_VERMELHO};
-            line-height: 1;
+            letter-spacing: 0.3px;
+            color: {COR_TEXTO};
+            line-height: 1.2;
         }}
         .senai-header .brand-sub {{
             font-size: 11px;
@@ -210,7 +234,7 @@ def inject_css():
             margin: 8px 0 0 0;
         }}
 
-        /* ---------- Legenda da frequência ---------- */
+        /* ---------- Legenda da regência ---------- */
         .freq-legend {{
             margin: 2px 0 12px 0;
         }}
@@ -381,15 +405,17 @@ def inject_css():
 
 
 def render_header():
+    logo_uri = _logo_data_uri()
+    img_tag = f'<img class="brand-logo" src="{logo_uri}" alt="SENAI">' if logo_uri else ""
     st.markdown(
         f"""
         <div class="senai-header">
             <div class="brand-line">
-                <span class="brand">SENAI</span>
-                <span class="brand-sub">SERVIÇO NACIONAL DE APRENDIZAGEM INDUSTRIAL</span>
+                {img_tag}
+                <span class="brand">{INSTITUICAO}</span>
             </div>
             <div class="right">
-                <div class="title">BI DE REGÊNCIA - FREQUÊNCIA DOS INSTRUTORES</div>
+                <div class="title">BI DE REGÊNCIA - REGÊNCIA DOS INSTRUTORES</div>
                 <div class="subtitle">Quadro de instrutores 2026</div>
             </div>
         </div>
@@ -404,7 +430,7 @@ def kpi_cards(instrutores, horas_periodo, freq_media, total_ano):
     cards = [
         ("Instrutores ativos", f"{instrutores}", "no conjunto filtrado", ""),
         ("Horas-aula no período", f"{horas_periodo:,.0f}".replace(",", "."), "soma dos meses selecionados", ""),
-        ("Frequência média", f"{freq_pct:.1f}%", "horas realizadas vs. esperadas", dot),
+        ("Regência média", f"{freq_pct:.1f}%", "horas realizadas vs. esperadas", dot),
         ("Horas-aula no ano", f"{total_ano:,.0f}".replace(",", "."), "total consolidado do quadro", ""),
     ]
     cols = st.columns(4)
@@ -456,16 +482,16 @@ def frequency_histogram(series):
     fig = px.bar(
         x=centers,
         y=counts,
-        labels={"x": "Frequência média (%)", "y": "Instrutores"},
+        labels={"x": "Regência média (%)", "y": "Instrutores"},
     )
     fig.update_traces(
         width=width,
         marker_color=[freq_color(c) for c in centers],
         marker_line_color=COR_BG,
         marker_line_width=0.5,
-        hovertemplate="Frequência: %{x:.1f}%<br>Instrutores: %{y}<extra></extra>",
+        hovertemplate="Regência: %{x:.1f}%<br>Instrutores: %{y}<extra></extra>",
     )
-    fig.update_layout(yaxis_title="Instrutores", xaxis_title="Frequência média (%)")
+    fig.update_layout(yaxis_title="Instrutores", xaxis_title="Regência média (%)")
     return fig
 
 
@@ -713,7 +739,7 @@ def main():
     # VISÃO GERAL
     # ------------------------------------------------------------------
     with tab_geral:
-        section_title("Frequência média por instrutor")
+        section_title("Regência média por instrutor")
         frequency_legend()
         freq = (
             monthly_f.groupby("DOCENTE")["PCT"]
@@ -731,12 +757,12 @@ def main():
                 x="PCT%",
                 y="DOCENTE",
                 orientation="h",
-                labels={"PCT%": "Frequência média (%)"},
+                labels={"PCT%": "Regência média (%)"},
             )
             fig.update_traces(
                 marker_color=[freq_color(p) for p in freq["PCT%"]],
                 marker_line_width=0,
-                hovertemplate="<b>%{y}</b><br>Frequência média: %{x:.1f}%<extra></extra>",
+                hovertemplate="<b>%{y}</b><br>Regência média: %{x:.1f}%<extra></extra>",
             )
             fig.add_vline(
                 x=100,
@@ -760,7 +786,7 @@ def main():
         col_dist, col_area = st.columns(2, gap="large")
 
         with col_dist:
-            section_title("Distribuição da frequência média")
+            section_title("Distribuição da regência média")
             if not freq.empty:
                 fig2 = frequency_histogram(freq["PCT%"])
                 chart_card(fig2, height=330)
@@ -846,7 +872,7 @@ def main():
             scroll_h_rank = 600 if chart_h_rank > 600 else None
             chart_card(fig, y_primary=True, scroll_height=scroll_h_rank)
 
-        section_title("Frequência por instrutor e mês (%)")
+        section_title("Regência por instrutor e mês (%)")
         frequency_legend()
         if not monthly_f.empty:
             pivot = (
@@ -868,7 +894,7 @@ def main():
                     texttemplate="%{text:.0f}",
                     textfont=dict(size=12, color=COR_TEXTO),
                     colorbar=dict(title="%", tickfont=dict(color=COR_TEXTO_SEC, size=11), outlinewidth=0),
-                    hovertemplate="<b>%{y}</b> - %{x}<br>Frequência: %{z:.1f}%<extra></extra>",
+                    hovertemplate="<b>%{y}</b> - %{x}<br>Regência: %{z:.1f}%<extra></extra>",
                 )
             )
             fig_h.update_layout(
@@ -906,7 +932,7 @@ def main():
                 chart_card(fig, height=380)
 
         with col_fm:
-            section_title("Frequência média por mês")
+            section_title("Regência média por mês")
             mes_p = monthly_f.groupby("MES", observed=True)["PCT"].mean().reset_index()
             if not mes_p.empty:
                 fig = px.line(
@@ -915,11 +941,11 @@ def main():
                     y="PCT",
                     markers=True,
                     color_discrete_sequence=[COR_AZUL_CLARO],
-                    labels={"MES": "Mês", "PCT": "Frequência média"},
+                    labels={"MES": "Mês", "PCT": "Regência média"},
                 )
                 fig.update_yaxes(tickformat=".0%", range=[0, max(1.2, mes_p["PCT"].max() * 1.1)])
                 fig.update_traces(line=dict(width=3), marker=dict(size=8),
-                                  hovertemplate="<b>%{x}</b><br>Frequência média: %{y:.1%}<extra></extra>")
+                                  hovertemplate="<b>%{x}</b><br>Regência média: %{y:.1%}<extra></extra>")
                 fig.update_layout(height=380)
                 chart_card(fig, height=380)
 

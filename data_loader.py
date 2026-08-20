@@ -51,11 +51,29 @@ AREA_NORM = {
 # Polo/local de regência
 # - Se a planilha tiver uma coluna POLO/LOCAL (na linha de cabeçalho), ela é lida.
 # - Se não existir (ou célula vazia), o valor é inferido a partir do rótulo antigo:
-#   "(JD)" -> polo do treinamento John Deere; demais -> unidade-base (Vila Canaã).
+#   "(JD)" -> polo do treinamento John Deere; demais -> unidade-base (o Complexo).
+# - Variações antigas do nome da unidade ("Vila Canaã", "Canaã") são normalizadas
+#   para o nome oficial: Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas.
 # Recomenda-se que a coordenação preencha POLO/LOCAL para todos os instrutores.
-POLO_DEFAULT = "Vila Canaã"
+POLO_DEFAULT = "Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas"
 POLO_JD_LEGACY = "John Deere"
 POLO_HEADERS = ("POLO", "LOCAL", "LOCAL DE REGÊNCIA", "LOCAL DE REGENCIA", "POLO/LOCAL", "POLO / LOCAL")
+
+# Normaliza variações do nome da unidade-base para o nome oficial da instituição.
+POLO_NORM = {
+    "VILA CANAÃ": POLO_DEFAULT,
+    "CANAÃ": POLO_DEFAULT,
+    "SENAI CANAÃ": POLO_DEFAULT,
+    "SENAI VILA CANAÃ": POLO_DEFAULT,
+}
+
+
+def _norm_polo(value):
+    """Normaliza variações do nome da unidade-base para o nome oficial."""
+    s = str(value).strip()
+    if not s:
+        return s
+    return POLO_NORM.get(s.upper(), s)
 
 
 def _norm_area(value):
@@ -136,6 +154,7 @@ def load_regencia(source) -> pd.DataFrame:
         if not polo:
             # Inferência: rótulo antigo (JD) = polo do treinamento John Deere
             polo = POLO_JD_LEGACY if "(JD)" in area_upper else POLO_DEFAULT
+        polo = _norm_polo(polo)
 
         carga = None
         if pd.notna(ch):

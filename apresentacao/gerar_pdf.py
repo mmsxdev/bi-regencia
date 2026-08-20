@@ -54,12 +54,12 @@ def page(img, title, dest, append):
 
 def main():
     items = [
-        ("mes_frequencia_line.png", "Frequencia media por mes (2026)"),
+        ("mes_frequencia_line.png", "Regência média por mês (2026)"),
         ("mes_horas_bar.png", "Horas-aula totais por mes"),
-        ("distribuicao_hist.png", "Distribuicao da frequencia media"),
-        ("area_freq_bar.png", "Frequencia media por area"),
-        ("instrutores_menor.png", "Menores frequencias (alerta)"),
-        ("instrutores_maior.png", "Maiores frequencias (destaque)"),
+        ("distribuicao_hist.png", "Distribuição da regência média"),
+        ("area_freq_bar.png", "Regência média por área"),
+        ("instrutores_menor.png", "Menores regências (alerta)"),
+        ("instrutores_maior.png", "Maiores regências (destaque)"),
         ("ranking_horas.png", "Top 10 horas-aula no ano"),
         ("automotiva_polos.png", "Manutencao automotiva (area unificada) por polo"),
         ("heatmap.png", "Heatmap instrutor x mes (%)"),

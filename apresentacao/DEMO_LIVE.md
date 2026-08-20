@@ -19,7 +19,7 @@ Checklist e sequência de cliques para apresentar o painel à diretora. Tempo es
 | Passo | O que fazer | O que dizer (resumo) |
 |---|---|---|
 | 1 | Tela inicial | "Este painel consolida a regência dos 45 instrutores a partir da planilha de regência." |
-| 2 | Apontar os 4 KPIs | "45 instrutores, 61% de frequência média, 37,3 mil horas-aula e 12 instrutores abaixo de 50%." |
+| 2 | Apontar os 4 KPIs | "45 instrutores, 61% de regência média, 37,3 mil horas-aula e 12 instrutores abaixo de 50%." |
 | 3 | Aba **Por Mês** → gráfico de linha | "A curva do ano: vale em janeiro, pico no 2º trimestre, queda em julho (férias), recuperação em agosto." |
 | 4 | Aba **Visão Geral** → histograma | "27% do quadro está abaixo de 50%; só 2 instrutores passam de 100%." |
 | 5 | Aba **Visão Geral** → horas por área | "O volume se concentra em Gráfica editorial e Alimentos e bebidas." |

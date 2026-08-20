@@ -1,4 +1,4 @@
-# GUIA DE APRESENTAÇÃO — BI DE REGÊNCIA (Frequência dos Instrutores)
+# GUIA DE APRESENTAÇÃO — BI DE REGÊNCIA (Regência dos Instrutores)
 
 > Material para apresentar o painel à diretora da unidade e às equipes do SENAI.
 > Ele explica **o que é o painel**, **como ler cada gráfico** e **o que os dados reais de 2026 já mostram** — com números, roteiro de fala e mensagens-chave.
@@ -7,11 +7,11 @@
 
 ## 1. O que é o BI de Regência (visão geral)
 
-O painel é um **relatório interativo da frequência dos instrutores do quadro** em sala de aula.
+O painel é um **relatório interativo da regência dos instrutores do quadro** em sala de aula.
 Ele responde a perguntas como:
 
 - Quantas **horas-aula** cada instrutor realizou? E por mês?
-- Que **% da carga prevista** cada um está cumprindo? (a chamada **frequência**)
+- Que **% da carga prevista** cada um está cumprindo? (a chamada **regência**)
 - Quais **áreas** concentram os instrutores com menor atividade?
 - Como está a evolução ao longo do **ano**? Onde estão os picos e as quedas?
 
@@ -34,11 +34,11 @@ Na planilha, **cada linha é um instrutor**. As colunas são:
 | `DOCENTE` | Nome do instrutor |
 | `Ch` | Carga horária semanal prevista (ex.: 40 h) |
 | `ÁREA` | Área técnica em que atua |
-| `POLO / LOCAL` | Local de regência (ex.: `Vila Canaã`, `John Deere`). Lido da planilha se a coluna existir; se não, inferido pelo painel |
+| `POLO / LOCAL` | Local de regência (ex.: `Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas`, `John Deere`). Lido da planilha se a coluna existir; se não, inferido pelo painel |
 | `H/AULA` (JAN a DEZ) | **Horas-aula realizadas** naquele mês |
-| `%` (JAN a DEZ) | **Frequência** = horas-aula ÷ carga esperada no mês |
+| `%` (JAN a DEZ) | **Regência** = horas-aula ÷ carga esperada no mês |
 | `ANO` | Total de horas no ano |
-| `MÉDIA` | Média de frequência no período |
+| `MÉDIA` | Média de regência no período |
 | `EXTRA-QUADRO` | Horas de instrutores extra-quadro |
 
 > **Unificação automática de áreas:** o painel normaliza a área na leitura. Ex.: `Manutenção automotiva
@@ -46,7 +46,7 @@ Na planilha, **cada linha é um instrutor**. As colunas são:
 > **Construção Civil**; `Grafica editorial` vira **Gráfica editorial**. Assim a análise não fica
 > fragmentada por digitação. No `data_loader.py`, basta acrescentar entradas no dicionário `AREA_NORM`.
 
-> **Termo-chave — "frequência":** no painel, frequência **não é** faltas/atrasos. É a relação entre
+> **Termo-chave — "regência":** no painel, regência **não é** faltas/atrasos. É a relação entre
 > o que o instrutor **efetivamente ministrou** e a **carga de regência esperada** para ele naquele mês.
 > - 100% → cumpriu exatamente a carga esperada.
 > - Acima de 100% → ministrou **mais** do que a carga prevista (ocorre e é um dado valioso).
@@ -68,13 +68,13 @@ Ao abrir o painel há **4 indicadores principais**:
 |---|---|
 | **Instrutores ativos** | Quantos instrutores existem no conjunto filtrado (padrão: 45) |
 | **Horas-aula no período** | Soma das horas dos meses selecionados (padrão: todo o ano) |
-| **Frequência média** | Média das frequências mensais dos instrutores no período — o indicador de saúde do quadro inteiro |
+| **Regência média** | Média das regências mensais dos instrutores no período — o indicador de saúde do quadro inteiro |
 | **Horas-aula no ano** | Total do quadro usando a coluna `ANO` da planilha |
 
 > **Leitura atual (dados 2026, quadro completo):**
 > - 45 instrutores
 > - ~37.306 horas-aula no período
-> - Frequência média: **61,0%**
+> - Regência média: **61,0%**
 > - ~36.457 horas-aula no ano (coluna `ANO`)
 >
 > Note que existem **dois totais** (37.306 vs 36.457): um soma os meses dentro do painel e o outro vem
@@ -86,7 +86,7 @@ Ao abrir o painel há **4 indicadores principais**:
 
 - **Instrutor(es):** isola um ou vários nomes.
 - **Área:** filtra por área técnica (áreas já unificadas pelo painel).
-- **Polo / Local:** filtra pelo local de regência (ex.: `Vila Canaã`, `John Deere`) — separa
+- **Polo / Local:** filtra pelo local de regência (ex.: `Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas`, `John Deere`) — separa
   onde atuam sem fragmentar a área.
 - **Meses do período:** escolhe quais meses entram nos cálculos (KPIs e gráficos respondem
   instantaneamente).
@@ -97,25 +97,25 @@ ex.: *"Vamos ver só a área de Manutenção automotiva"* ou *"Agora só o mês 
 
 ### 3.3 Aba "Visão Geral"
 
-1. **Frequência média por instrutor** (barras horizontais):
-   uma barra por instrutor, colorida pela própria frequência. A legenda acima (Baixa → Alta)
-   ensina a ler as cores. Com o quadro completo, os instrutores de menor frequência aparecem
+1. **Regência média por instrutor** (barras horizontais):
+   uma barra por instrutor, colorida pela própria regência. A legenda acima (Baixa → Alta)
+   ensina a ler as cores. Com o quadro completo, os instrutores de menor regência aparecem
    primeiro (ordenado do menor para o maior).
-2. **Distribuição da frequência média** (histograma):
+2. **Distribuição da regência média** (histograma):
    quantos instrutores em cada faixa. Mostra, de uma olhada, se o quadro está concentrado em
    faixas boas ou ruins. Hoje: 12 instrutores abaixo de 50%, 15 em 50–70%, 16 em 70–100% e 2 acima de 100%.
 3. **Horas-aula por área** (barras horizontais):
    onde o esforço em sala está concentrado. Gráfica editorial e Alimentos e bebidas lideram em
    volume; Manutenção automotiva também tem volume grande (13 instrutores, área já unificada), porém
-   com frequência baixa.
+   com regência baixa.
 4. **Horas-aula por polo** (barras horizontais, abaixo da área):
-   mostra o volume por local de regência (`Vila Canaã` × `John Deere`), sem que isso
+   mostra o volume por local de regência (`Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas` × `John Deere`), sem que isso
    divida a área em grupos artificiais.
 
 ### 3.4 Aba "Por Instrutor"
 
 1. **Ranking de horas-aula:** quem mais ministrou horas no período (maior volume de trabalho).
-2. **Heatmap instrutor × mês (%):** a "radiografia" do quadro. Cada célula é a frequência de um
+2. **Heatmap instrutor × mês (%):** a "radiografia" do quadro. Cada célula é a regência de um
    instrutor em um mês, com a mesma escala de cores.
    - **Leitura visual:** colunas escuras/vermelhas = meses fracos; linhas vermelhas = instrutores com
      baixa atividade ao longo do ano. As colunas de **julho e dezembro** ficam visivelmente mais
@@ -125,7 +125,7 @@ ex.: *"Vamos ver só a área de Manutenção automotiva"* ou *"Agora só o mês 
 ### 3.5 Aba "Por Mês"
 
 1. **Horas-aula totais por mês:** volume de atividade mensal do quadro inteiro.
-2. **Frequência média por mês (linha):** a evolução do indicador central. Este é o gráfico mais
+2. **Regência média por mês (linha):** a evolução do indicador central. Este é o gráfico mais
    fácil de mostrar a sazonalidade.
 
 > **Curva de 2026 (para a apresentação):**
@@ -134,7 +134,7 @@ ex.: *"Vamos ver só a área de Manutenção automotiva"* ou *"Agora só o mês 
 >
 > A leitura natural: **janeiro** (início de ano, entrada/reajuste de contrato), **julho** (férias
 > escolares) e **dezembro** (encerramento) são os vales esperados. Março–Setembro concentram o
-> período produtivo. É importante **calibrar a meta de frequência levando a sazonalidade em conta** —
+> período produtivo. É importante **calibrar a meta de regência levando a sazonalidade em conta** —
 > cobrar 80% em julho seria injusto.
 
 ### 3.6 Aba "Tabela"
@@ -150,14 +150,14 @@ Os dados consolidados na íntegra (carga, área, **polo**, horas e % por mês, t
 > informação de gestão**.
 
 ### 4.1 Panorama do quadro
-- **45 instrutores**, frequência média de **61%**, ~37,3 mil horas-aula no ano.
-- Mais de **1/4 do quadro (12 instrutores, 27%) está abaixo de 50%** de frequência — zona de alerta.
+- **45 instrutores**, regência média de **61%**, ~37,3 mil horas-aula no ano.
+- Mais de **1/4 do quadro (12 instrutores, 27%) está abaixo de 50%** de regência — zona de alerta.
 - Apenas **2 instrutores acima de 100%** (ministram acima da carga prevista).
 
 ### 4.2 Onde está a atenção (riscos)
 Os 5 menores índices em 2026 são de **Manutenção automotiva / (JD)**:
 
-| Instrutor | Área | Freq. média | Horas no ano |
+| Instrutor | Área | Reg. média | Horas no ano |
 |---|---|---|---|
 | DIOGO DE SOUZA PIMENTEL | Manutenção automotiva | 10,8% | 207 |
 | DINAIRON DA SILVA BORGES | Manutenção automotiva | 14,6% | 280 |
@@ -166,25 +166,25 @@ Os 5 menores índices em 2026 são de **Manutenção automotiva / (JD)**:
 | MANOEL DA PACIÊNCIA RAMALHO DE SOUSA | Manutenção automotiva | 34,1% | 655 |
 
 - Na área **Manutenção automotiva** (13 instrutores — inclui o polo "JD", unificado pelo painel),
-  **7 estão abaixo de 50%**. Frequência média da área: **~46%** — a mais crítica do quadro.
-- Outras áreas com frequência abaixo da média geral: **Administração (~44%)**, **Segurança do
+  **7 estão abaixo de 50%**. Regência média da área: **~46%** — a mais crítica do quadro.
+- Outras áreas com regência abaixo da média geral: **Administração (~44%)**, **Segurança do
   trabalho (~36%)**.
-- **Pergunta para a diretora trocar em gestão:** os instrutores com baixa frequência estão com
+- **Pergunta para a diretora trocar em gestão:** os instrutores com baixa regência estão com
   carga reduzida? Afastados parcialmente? Realocação de unidades? O painel não responde o "porquê",
   mas aponta **quem** e **onde** — e é isso que orienta a conversa com a coordenação.
 
 ### 4.3 Destaques positivos (espelho para boas práticas)
-- **Gráfica editorial** (11 instrutores): maior volume (~9.712 h) e maior frequência média (~75%).
-- **Alimentos e bebidas** (6 instrutores): ~73% de frequência, **BRUNA ARIEL DIAS GUARIGLIA**
+- **Gráfica editorial** (11 instrutores): maior volume (~9.712 h) e maior regência média (~75%).
+- **Alimentos e bebidas** (6 instrutores): ~73% de regência, **BRUNA ARIEL DIAS GUARIGLIA**
   com **103,8%** e ~1.495 h no ano.
-- **ROMULO FLORIANO LIMEIRA** (Gráfica editorial): **109,5%** — maior frequência do quadro.
+- **ROMULO FLORIANO LIMEIRA** (Gráfica editorial): **109,5%** — maior regência do quadro.
 - **LEIDINA LAIS** (Manutenção automotiva): **1.552 h** no ano — maior volume do quadro, mesmo
   estando em uma área crítica. Exemplo de que "pessoa certa no lugar certo faz diferença".
 
 ### 4.4 Sazonalidade (para calibrar metas)
 A queda de **julho (18%)** aparece como o maior vale do ano e coincide com o recesso escolar.
 Janeiro (41%) e dezembro (37%) têm comportamento de início/fim de ciclo. **Recomendação:** usar os
-meses de março a setembro como referência de "frequência saudável" (78–82%) e definir metas por
+meses de março a setembro como referência de "regência saudável" (78–82%) e definir metas por
 período, em vez de uma única meta anual.
 
 ### 4.5 Qualidade dos dados (transparência e plano de ação)
@@ -204,20 +204,20 @@ período, em vez de uma única meta anual.
 
 **O que era:** a planilha tinha `Manutenção automotiva` e `Manutenção automotiva (JD)` como áreas
 "diferentes". Isso **não** eram duas áreas técnicas:
-- A planilha inteira é da **Escola SENAI Vila Canaã** — inclusive os instrutores "(JD)"
+- A planilha inteira é do **Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas** — inclusive os instrutores "(JD)"
   (BRUNO SILVA OLIVEIRA e WELLINGTON CHAVES PEREIRA, ambos com 40 h).
 - **"JD" = John Deere**: a unidade mantém um **ponto de treinamento John Deere** para capacitação
   de profissionais — o mesmo curso de Manutenção automotiva, em outro local.
-  Por isso os 2 instrutores acima são do polo **John Deere**, e não de um segundo local da escola.
+  Por isso os 2 instrutores acima são do polo **John Deere**, e não de um segundo local do Complexo.
 
 **O que mudou (implementado no painel):**
 1. **Área unificada:** o `data_loader.py` normaliza `Manutenção automotiva (JD)` → **Manutenção automotiva**
    (mesma regra também corrige `Contrução Civil` → `Construção Civil` e `Grafica editorial` → `Gráfica editorial`).
-2. **Novo campo POLO / LOCAL:** identifica o **local de regência** — `Vila Canaã` (unidade) e `John Deere`
+2. **Novo campo POLO / LOCAL:** identifica o **local de regência** — `Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas` (unidade) e `John Deere`
    (ponto de treinamento).
    - Se a planilha tiver uma coluna `POLO`/`LOCAL` no cabeçalho, o painel **lê dela** (assim a coordenação
      controla os valores).
-   - Se a coluna **não existir**, o painel **infere**: rótulo "(JD)" → `John Deere`; demais → `Vila Canaã`.
+   - Se a coluna **não existir**, o painel **infere**: rótulo "(JD)" → `John Deere`; demais → `Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas`.
 3. **Novo filtro "Polo / Local":** permite isolar `John Deere` sem que a área se fragmente.
 4. **Gráfico "Horas-aula por polo"** na aba Visão Geral e coluna **POLO** na aba Tabela/CSV.
 
@@ -240,16 +240,16 @@ instrutores (assim o painel passa a usar o valor oficial em vez da inferência).
    a carga prevista."
 
 2. **Os 4 números azuis do topo (2 min):**
-   "45 instrutores, ~37,3 mil horas-aula no ano, frequência média de 61%." Destaque de que 61% é a
+   "45 instrutores, ~37,3 mil horas-aula no ano, regência média de 61%." Destaque de que 61% é a
    média geral, mas esconde realidades diferentes — e é isso que vamos destrinchar.
 
-3. **Aba "Por Mês" (3 min):** mostre a linha da frequência.
+3. **Aba "Por Mês" (3 min):** mostre a linha da regência.
    "Veja a curva do ano: janeiro começa em 41%, sobe para 78% em março, mantém 70–78% no semestre,
    cai para 18% em julho — férias — e retorna a 82% em agosto. Dezembro fecha em 37%. O padrão é
    absolutamente esperado para o calendário escolar."
 
 4. **Aba "Visão Geral" (3 min):** histograma + ranking.
-   "Quando olhamos a distribuição, 12 instrutores, 27% do quadro, estão abaixo de 50% de frequência.
+   "Quando olhamos a distribuição, 12 instrutores, 27% do quadro, estão abaixo de 50% de regência.
    Estes são nossos pontos de atenção. Em contraste, 16 instrutores estão entre 70% e 100%, e 2
    acima de 100% — gente que dá conta e mais um pouco."
 
@@ -266,9 +266,9 @@ instrutores (assim o painel passa a usar o valor oficial em vez da inferência).
 
 7. **Encerramento — plano de ação (1 min):**
    "Três encaminhamentos:
-   1) coordenação valida os casos de baixa frequência (por quê?);
+   1) coordenação valida os casos de baixa regência (por quê?);
    2) padronizamos a planilha (preencher POLO/LOCAL, totais, fechar a divergência dos dois totais);
-   3) definimos metas de frequência por período, respeitando férias.
+   3) definimos metas de regência por período, respeitando férias.
    E o painel garante o acompanhamento mensal — vamos encerrar o ano acompanhando este número."
 
 ---
@@ -277,11 +277,11 @@ instrutores (assim o painel passa a usar o valor oficial em vez da inferência).
 
 - **O dado já existia** (planilha) — o painel o **transforma em informação** com KPIs, rankings e
   evolução temporal.
-- **A frequência é a régua básica:** quem cumpre o que foi previsto. Hoje, ~**27% do quadro está
+- **A regência é a régua básica:** quem cumpre o que foi previsto. Hoje, ~**27% do quadro está
   abaixo de 50%** — isso é dinheiro e capacidade de ensino subaproveitados.
 - **O problema é concentrado e identificável:** a ferramenta aponta os **nomes**, **áreas**, **polos**
   e **meses** — o painel não julga, ele localiza.
-- **Há exemplos de sucesso dentro da própria casa:** áreas e instrutores com frequência ≥100% —
+- **Há exemplos de sucesso dentro da própria casa:** áreas e instrutores com regência ≥100% —
   referência de como planejar.
 - **Sazonalidade explica parte das quedas:** meta única para o ano é injusta; metas por período são
   melhores.
@@ -296,11 +296,11 @@ instrutores (assim o painel passa a usar o valor oficial em vez da inferência).
 |---|---|
 | **Regência** | Aulas ministradas / horas em sala de aula realizadas pelos instrutores |
 | **Quadro** | Conjunto de instrutores efetivos da unidade (a planilha "Quadro 2026") |
-| **Frequência (%)** | Horas-aula ÷ carga de regência esperada no mês |
+| **Regência (%)** | Horas-aula ÷ carga de regência esperada no mês |
 | **H/AULA** | Horas-aula realizadas (contagem) |
 | **Carga horária (Ch)** | Carga semanal prevista do instrutor (15 a 40 h no quadro atual) |
 | **Extra-quadro** | Instrutor eventual/terceirizado fora do quadro (coluna ainda zerada) |
-| **Heatmap** | Matriz colorida (instrutor × mês) que destaca padrões de frequência |
+| **Heatmap** | Matriz colorida (instrutor × mês) que destaca padrões de regência |
 
 ---
 
