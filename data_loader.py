@@ -40,8 +40,8 @@ DATA_START = 6
 # ---------------------------------------------------------------------------
 # O painel unifica nomes duplicados/errôneos digitados na planilha para que a
 # análise por área não fique fragmentada. Ex.: "Manutenção automotiva (JD)"
-# era um rótulo interno do polo SEDUC (escola parceira Jardim Vila Boa) da
-# MESMA área. As chaves estão em MAIÚSCULO (comparação case-insensitive).
+# era um rótulo interno do polo de treinamento John Deere da MESMA área.
+# As chaves estão em MAIÚSCULO (comparação case-insensitive).
 AREA_NORM = {
     "MANUTENÇÃO AUTOMOTIVA (JD)": "Manutenção automotiva",
     "CONTRUÇÃO CIVIL": "Construção Civil",
@@ -51,10 +51,10 @@ AREA_NORM = {
 # Polo/local de regência
 # - Se a planilha tiver uma coluna POLO/LOCAL (na linha de cabeçalho), ela é lida.
 # - Se não existir (ou célula vazia), o valor é inferido a partir do rótulo antigo:
-#   "(JD)" -> polo da escola parceira; demais -> unidade-base (Vila Canaã).
+#   "(JD)" -> polo do treinamento John Deere; demais -> unidade-base (Vila Canaã).
 # Recomenda-se que a coordenação preencha POLO/LOCAL para todos os instrutores.
 POLO_DEFAULT = "Vila Canaã"
-POLO_JD_LEGACY = "Jardim Vila Boa (SEDUC)"
+POLO_JD_LEGACY = "John Deere"
 POLO_HEADERS = ("POLO", "LOCAL", "LOCAL DE REGÊNCIA", "LOCAL DE REGENCIA", "POLO/LOCAL", "POLO / LOCAL")
 
 
@@ -134,7 +134,7 @@ def load_regencia(source) -> pd.DataFrame:
             v = df.iloc[idx, polo_col]
             polo = str(v).strip() if pd.notna(v) and str(v).strip() else None
         if not polo:
-            # Inferência: rótulo antigo (JD) = polo da escola parceira SEDUC
+            # Inferência: rótulo antigo (JD) = polo do treinamento John Deere
             polo = POLO_JD_LEGACY if "(JD)" in area_upper else POLO_DEFAULT
 
         carga = None

@@ -34,7 +34,7 @@ Na planilha, **cada linha é um instrutor**. As colunas são:
 | `DOCENTE` | Nome do instrutor |
 | `Ch` | Carga horária semanal prevista (ex.: 40 h) |
 | `ÁREA` | Área técnica em que atua |
-| `POLO / LOCAL` | Local de regência (ex.: `Vila Canaã`, `Jardim Vila Boa (SEDUC)`). Lido da planilha se a coluna existir; se não, inferido pelo painel |
+| `POLO / LOCAL` | Local de regência (ex.: `Vila Canaã`, `John Deere`). Lido da planilha se a coluna existir; se não, inferido pelo painel |
 | `H/AULA` (JAN a DEZ) | **Horas-aula realizadas** naquele mês |
 | `%` (JAN a DEZ) | **Frequência** = horas-aula ÷ carga esperada no mês |
 | `ANO` | Total de horas no ano |
@@ -42,7 +42,7 @@ Na planilha, **cada linha é um instrutor**. As colunas são:
 | `EXTRA-QUADRO` | Horas de instrutores extra-quadro |
 
 > **Unificação automática de áreas:** o painel normaliza a área na leitura. Ex.: `Manutenção automotiva
-> (JD)` (rótulo interno do polo SEDUC) vira **Manutenção automotiva**; `Contrução Civil` vira
+> (JD)` (polo de treinamento John Deere) vira **Manutenção automotiva**; `Contrução Civil` vira
 > **Construção Civil**; `Grafica editorial` vira **Gráfica editorial**. Assim a análise não fica
 > fragmentada por digitação. No `data_loader.py`, basta acrescentar entradas no dicionário `AREA_NORM`.
 
@@ -86,7 +86,7 @@ Ao abrir o painel há **4 indicadores principais**:
 
 - **Instrutor(es):** isola um ou vários nomes.
 - **Área:** filtra por área técnica (áreas já unificadas pelo painel).
-- **Polo / Local:** filtra pelo local de regência (ex.: `Vila Canaã`, `Jardim Vila Boa (SEDUC)`) — separa
+- **Polo / Local:** filtra pelo local de regência (ex.: `Vila Canaã`, `John Deere`) — separa
   onde atuam sem fragmentar a área.
 - **Meses do período:** escolhe quais meses entram nos cálculos (KPIs e gráficos respondem
   instantaneamente).
@@ -109,7 +109,7 @@ ex.: *"Vamos ver só a área de Manutenção automotiva"* ou *"Agora só o mês 
    volume; Manutenção automotiva também tem volume grande (13 instrutores, área já unificada), porém
    com frequência baixa.
 4. **Horas-aula por polo** (barras horizontais, abaixo da área):
-   mostra o volume por local de regência (`Vila Canaã` × `Jardim Vila Boa (SEDUC)`), sem que isso
+   mostra o volume por local de regência (`Vila Canaã` × `John Deere`), sem que isso
    divida a área em grupos artificiais.
 
 ### 3.4 Aba "Por Instrutor"
@@ -206,22 +206,19 @@ período, em vez de uma única meta anual.
 "diferentes". Isso **não** eram duas áreas técnicas:
 - A planilha inteira é da **Escola SENAI Vila Canaã** — inclusive os instrutores "(JD)"
   (BRUNO SILVA OLIVEIRA e WELLINGTON CHAVES PEREIRA, ambos com 40 h).
-- A aba `MODELO SEDUC` da própria planilha traz a escola parceira **Col. Est. Jardim Vila Boa** e o curso
-  **"Técnico em Manutenção Automotiva - Seduc"** — indicação de que **"JD" = Jardim (Vila Boa)**, o polo
-  da escola parceira do programa SEDUC.
-
-> ⚠️ **Transparência:** a sigla "JD" não está explicada em nenhuma célula da planilha — a leitura acima é
-> a **interpretação mais provável**. Confirme com a coordenação de regência.
+- **"JD" = John Deere**: a unidade mantém um **ponto de treinamento John Deere** para capacitação
+  de profissionais — o mesmo curso de Manutenção automotiva, em outro local.
+  Por isso os 2 instrutores acima são do polo **John Deere**, e não de um segundo local da escola.
 
 **O que mudou (implementado no painel):**
 1. **Área unificada:** o `data_loader.py` normaliza `Manutenção automotiva (JD)` → **Manutenção automotiva**
    (mesma regra também corrige `Contrução Civil` → `Construção Civil` e `Grafica editorial` → `Gráfica editorial`).
-2. **Novo campo POLO / LOCAL:** identifica o **local de regência** — `Vila Canaã` (unidade) e
-   `Jardim Vila Boa (SEDUC)` (polo da escola parceira).
+2. **Novo campo POLO / LOCAL:** identifica o **local de regência** — `Vila Canaã` (unidade) e `John Deere`
+   (ponto de treinamento).
    - Se a planilha tiver uma coluna `POLO`/`LOCAL` no cabeçalho, o painel **lê dela** (assim a coordenação
      controla os valores).
-   - Se a coluna **não existir**, o painel **infere**: rótulo "(JD)" → `Jardim Vila Boa (SEDUC)`; demais → `Vila Canaã`.
-3. **Novo filtro "Polo / Local":** permite isolar `Jardim Vila Boa (SEDUC)` sem que a área se fragmente.
+   - Se a coluna **não existir**, o painel **infere**: rótulo "(JD)" → `John Deere`; demais → `Vila Canaã`.
+3. **Novo filtro "Polo / Local":** permite isolar `John Deere` sem que a área se fragmente.
 4. **Gráfico "Horas-aula por polo"** na aba Visão Geral e coluna **POLO** na aba Tabela/CSV.
 
 **Resultado:** a diretora enxerga **Manutenção automotiva como uma área única** (13 instrutores,
@@ -257,11 +254,11 @@ instrutores (assim o painel passa a usar o valor oficial em vez da inferência).
    acima de 100% — gente que dá conta e mais um pouco."
 
 5. **Filtro por área: Manutenção automotiva (3 min):**
-   "Filtrando a área (que o painel unifica, incluindo o polo do SEDUC), vemos que 7 de 13 instrutores
+   "Filtrando a área (que o painel unifica, incluindo o polo John Deere), vemos que 7 de 13 instrutores
    estão abaixo de 50%. Os quatro menores índices do quadro inteiro estão aqui. Não é por acaso — a área
    precisa de atenção da coordenação: carga reduzida? afastamentos? remanejamento?"
-   *(Opcional: filtrar em seguida **Polo = Jardim Vila Boa (SEDUC)** para mostrar os 2 instrutores do
-   polo parceiro e explicar que é a mesma área em outro local.)*
+   *(Opcional: filtrar em seguida **Polo = John Deere** para mostrar os 2 instrutores do
+   ponto de treinamento e explicar que é a mesma área em outro local.)*
 
 6. **Destaques e boas práticas (2 min):**
    "Do outro lado, Gráfica editorial e Alimentos e bebidas rodam a 74–75%. É o espelho do que

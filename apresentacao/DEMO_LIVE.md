@@ -24,7 +24,7 @@ Checklist e sequência de cliques para apresentar o painel à diretora. Tempo es
 | 4 | Aba **Visão Geral** → histograma | "27% do quadro está abaixo de 50%; só 2 instrutores passam de 100%." |
 | 5 | Aba **Visão Geral** → horas por área | "O volume se concentra em Gráfica editorial e Alimentos e bebidas." |
 | 6 | Filtrar **Área = Manutenção automotiva** | "A área crítica: área única de 13 instrutores, 7 abaixo de 50%. Nome e área identificados." |
-| 6a | (opcional) Filtrar **Polo = Jardim Vila Boa (SEDUC)** | "Estes 2 são os instrutores do polo da escola parceira — a mesma área, em outro local." |
+| 6a | (opcional) Filtrar **Polo = John Deere** | "Estes 2 são os instrutores do ponto de treinamento John Deere — a mesma área, em outro local." |
 | 7 | Clicar **Limpar filtros** | "Voltamos ao quadro completo." |
 | 8 | Aba **Por Instrutor** → heatmap | "Radiografia mês a mês: colunas fracas em julho/dezembro são calendário; linhas vermelhas são gestão." |
 | 9 | Aba **Tabela** → **Baixar dados em CSV** (opcional) | "Dá para auditar/exportar qualquer recorte." |
@@ -36,7 +36,7 @@ Checklist e sequência de cliques para apresentar o painel à diretora. Tempo es
 - **Um semestre:** em **Meses do período**, tirar JAN–JUL para ver o segundo semestre.
 - **Uma área (unificada):** **Área = Manutenção automotiva** → mostra os 13 instrutores (incluindo o
   polo JD unificado) → ranking interno da área.
-- **Ver o polo SEDUC:** **Polo = Jardim Vila Boa (SEDUC)** → isola os 2 instrutores do polo parceiro.
+- **Ver o polo John Deere:** **Polo = John Deere** → isola os 2 instrutores do treinamento.
 - **Perceber a unificação:** no filtro **Área**, a opção única é "Manutenção automotiva" (sem "(JD)").
 
 ## 4. Plano B (sem internet / app fora do ar)

@@ -307,9 +307,9 @@ def s_automotiva():
             Inches(0.5), Inches(1.35), Inches(7.4), Inches(5.2))
     bullets(s, Inches(8.15), Inches(1.45), Inches(4.7), Inches(5.4), [
         "As \"Manutenção automotiva\" e \"(JD)\" foram unificadas em UMA área: 13 instrutores.",
-        "(JD) = rótulo interno do polo da escola parceira (Col. Est. Jardim Vila Boa / SEDUC) — confirmar com a coordenação.",
+        "(JD) = polo do treinamento John Deere (mesma área, em outro local).",
         "Frequência média da área: ~46% — 7 de 13 abaixo de 50%.",
-        ("Novo filtro POLO/LOCAL: separa Vila Canaã × Jardim Vila Boa (SEDUC) sem fragmentar a área.", True, AZUL, 0),
+        ("Novo filtro POLO/LOCAL: separa Vila Canaã × John Deere sem fragmentar a área.", True, AZUL, 0),
         "O painel lê a coluna POLO/LOCAL da planilha, se existir; senão, infere pelo rótulo antigo.",
         "Recomendação: preencher POLO/LOCAL para todos os instrutores na planilha-fonte.",
     ], size=13, gap=9)
@@ -364,7 +364,7 @@ def s_plano():
         ("1. Validar com a coordenação os casos de baixa frequência (quem, por quê, o que fazer).", True, TXT, 0),
         ("    · Prioridade: Manutenção automotiva (7 de 13 abaixo de 50%).", False, SEC, 1),
         ("2. Padronizar a planilha-fonte: nomes de área, totais anuais, lançamentos mensais completos.", True, TXT, 0),
-        ("    · Definir hoje o que significa \"(JD)\" e criar campo POLO/LOCAL.", False, SEC, 1),
+        ("    · Registrar POLO/LOCAL na planilha-fonte (ex.: polo \"John Deere\").", False, SEC, 1),
         ("3. Definir metas de frequência por período (respeitando férias e sazonalidade).", True, TXT, 0),
         ("4. Acompanhamento mensal com o painel — reavaliar o mesmo indicador.", True, TXT, 0),
     ], size=16, gap=14)

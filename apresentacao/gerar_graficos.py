@@ -197,11 +197,11 @@ def main():
     auto = df2[df2["AREA"] == "Manutenção automotiva"].copy()
     auto = auto.sort_values("FREQ_MEDIA")
     auto["GRUPO"] = auto["POLO"].apply(
-        lambda p: "Polo Jardim Vila Boa (SEDUC)" if "Jardim" in str(p) else "Vila Canaã"
+        lambda p: "Polo John Deere" if "Deere" in str(p) else "Vila Canaã"
     )
     fig = px.bar(auto, x="FREQ_MEDIA", y="DOCENTE", orientation="h",
                  color="GRUPO",
-                 color_discrete_map={"Vila Canaã": COR_AZUL_CLARO, "Polo Jardim Vila Boa (SEDUC)": COR_VERMELHO},
+                 color_discrete_map={"Vila Canaã": COR_AZUL_CLARO, "Polo John Deere": COR_VERMELHO},
                  text=auto["FREQ_MEDIA"].apply(lambda v: f"{v:.1f}%"))
     fig.update_traces(textposition="outside", textfont=dict(color=TEXTO, size=11),
                       hovertemplate="<b>%{y}</b><br>%{x:.1f}%<extra></extra>")

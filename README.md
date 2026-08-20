@@ -79,7 +79,7 @@ O `data_loader.py` localiza dinamicamente as colunas de cada mês pelos cabeçal
   `Manutenção automotiva (JD)` → `Manutenção automotiva`, `Contrução Civil` → `Construção Civil`,
   `Grafica editorial` → `Gráfica editorial`.
 - O campo **POLO/LOCAL** é lido do cabeçalho da planilha se existir coluna `POLO`/`LOCAL`; se não
-  existir, é inferido: rótulo antigo "(JD)" → `Jardim Vila Boa (SEDUC)`; demais → `Vila Canaã`.
+  existir, é inferido: rótulo antigo "(JD)" → `John Deere`; demais → `Vila Canaã`.
   A coordenação pode adicionar a coluna `POLO` na planilha para controlar os valores oficialmente.
 
 ## O que o painel mostra
