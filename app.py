@@ -55,12 +55,23 @@ st.set_page_config(
     layout="wide",
 )
 
-EXCEL_PATH = os.environ.get(
+def _get_secret(key, default=None):
+    if key in os.environ:
+        return os.environ[key]
+    try:
+        if hasattr(st, "secrets") and key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+    return default
+
+
+EXCEL_PATH = _get_secret(
     "REGENCIA_EXCEL",
     os.path.join(os.path.dirname(__file__), "REGÊNCIA - INSTRUTORES DO QUADRO 2026.xlsx"),
 )
-EXCEL_URL = os.environ.get("REGENCIA_EXCEL_URL", None)
-REFRESH_MINUTES = int(os.environ.get("REGENCIA_REFRESH_MINUTES", "10"))
+EXCEL_URL = _get_secret("REGENCIA_EXCEL_URL", None)
+REFRESH_MINUTES = int(_get_secret("REGENCIA_REFRESH_MINUTES", "10"))
 
 MONTH_ORDER = MONTH_LABELS
 MONTH_ORDER_ACRN = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]

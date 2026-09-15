@@ -10,6 +10,7 @@ venv/
 
 # Streamlit — mantém o tema (.streamlit/config.toml) no repositório
 .streamlit/*.local
+.streamlit/secrets.toml
 
 # Vercel
 .vercel/

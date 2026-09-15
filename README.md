@@ -53,7 +53,7 @@ entregue o **arquivo** diretamente. Duas formas:
 Defina a variável de ambiente (no Streamlit Cloud, em **Advanced settings → Secrets**):
 
 ```bash
-REGENCIA_EXCEL_URL=https://sesigoias-my.sharepoint.com/:x:/g/personal/ednilzapontes_senai_fieg_com_br/IQBG2JwB_-gXToj05nRpbJy8AQHJ_rpN34nSj1pfrEoOIOs?e=52nID4&download=1
+REGENCIA_EXCEL_URL=https://sesigoias-my.sharepoint.com/:x:/g/personal/ednilzapontes_senai_fieg_com_br/IQAy5lKZ54j3Qa5pqf-ybvXoAQ98uKdEooNKNE90PAWuTfk?e=rbvPg4&download=1
 REGENCIA_REFRESH_MINUTES=10
 ```
 
