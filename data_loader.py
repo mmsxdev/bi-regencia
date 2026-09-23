@@ -110,10 +110,12 @@ def _to_num(value):
 def _find_month_columns(header4: list) -> dict:
     cols = {}
     for month in MONTHS:
+        # Try exact match first (primary columns without "2" suffix)
         match = [i for i, v in enumerate(header4) if isinstance(v, str) and v.strip() == month]
         if match:
             cols[month] = match[0]
         else:
+            # Try startswith as fallback
             match = [i for i, v in enumerate(header4) if isinstance(v, str) and v.strip().startswith(month)]
             if match:
                 cols[month] = match[0]
@@ -141,6 +143,28 @@ def load_regencia(source) -> pd.DataFrame:
     for idx in range(DATA_START, len(df)):
         nome = df.iloc[idx, 0]
         if pd.isna(nome):
+            continue
+        # Skip rows where column 0 is a code number (modalities section at bottom),
+        # not an instructor name. Main instructors have names with letters.
+        nome_str = str(nome).strip()
+        if not any(c.isalpha() for c in nome_str):
+            continue
+        # Also skip modality rows: check if column 2 is "CARGA HORÁRIA" or 0
+        # (main instructors have actual area names in column 2)
+        area_raw = df.iloc[idx, 2]
+        area_str = str(area_raw).strip() if pd.notna(area_raw) else ""
+        if area_str in ("0", "CARGA HORÁRIA", "CARGA HORARIA", "Carga Horária", "Carga Horaria", "SEM ÁREA"):
+            continue
+        # Skip rows where all month data is NaN (modalities section has no H_AULA/PCT)
+        has_month_data = False
+        for m in MONTHS:
+            if m in month_cols:
+                c = month_cols[m]
+                val = df.iloc[idx, c]
+                if pd.notna(val):
+                    has_month_data = True
+                    break
+        if not has_month_data:
             continue
         ch = df.iloc[idx, 1]
         area_raw = df.iloc[idx, 2]
