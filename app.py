@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import requests
 import streamlit as st
 
-from data_loader import MONTH_LABELS, load_regencia, melt_monthly
+from data_loader import MONTH_LABELS, load_outros_por_instrutor, load_regencia, melt_monthly
 
 # ---------------------------------------------------------------------------
 # Paleta - Dark Corporate SENAI
@@ -582,23 +582,38 @@ def _download(url):
     return io.BytesIO(resp.content)
 
 
+
+def _load_outros(raw_bytes: bytes, target_year: int = 2026):
+    """Carrega horas OUTROS das abas individuais a partir de bytes do arquivo."""
+    try:
+        return load_outros_por_instrutor(io.BytesIO(raw_bytes), target_year=target_year)
+    except Exception:
+        return None
+
+
 @st.cache_data(show_spinner="Atualizando dados da planilha...", ttl=REFRESH_MINUTES * 60)
 def load_from_url(url):
     raw = _download(url)
-    df = load_regencia(raw)
-    return df, melt_monthly(df)
+    raw_bytes = raw.getvalue()
+    df = load_regencia(io.BytesIO(raw_bytes))
+    df_outros = _load_outros(raw_bytes)
+    return df, melt_monthly(df), df_outros
 
 
 @st.cache_data(show_spinner="Lendo planilha local...")
 def load_from_file(path):
-    df = load_regencia(path)
-    return df, melt_monthly(df)
+    with open(path, "rb") as f:
+        raw_bytes = f.read()
+    df = load_regencia(io.BytesIO(raw_bytes))
+    df_outros = _load_outros(raw_bytes)
+    return df, melt_monthly(df), df_outros
 
 
 def load_from_upload(uploaded):
-    raw = io.BytesIO(uploaded.getvalue())
-    df = load_regencia(raw)
-    return df, melt_monthly(df)
+    raw_bytes = uploaded.getvalue()
+    df = load_regencia(io.BytesIO(raw_bytes))
+    df_outros = _load_outros(raw_bytes)
+    return df, melt_monthly(df), df_outros
 
 
 def get_data():
@@ -619,6 +634,8 @@ def get_data():
     return None, "nenhuma"
 
 
+
+
 # ---------------------------------------------------------------------------
 # Aplicação
 # ---------------------------------------------------------------------------
@@ -626,7 +643,7 @@ def main():
     inject_css()
     render_header()
 
-    df, monthly = None, None
+    df, monthly, df_outros = None, None, None
 
     with st.sidebar:
         st.markdown('<div class="sidebar-title">Fonte de dados</div>', unsafe_allow_html=True)
@@ -649,14 +666,14 @@ def main():
             )
             uploaded = st.file_uploader("Planilha de regência (xlsx)", type=["xlsx"])
             if uploaded is not None:
-                df, monthly = load_from_upload(uploaded)
+                df, monthly, df_outros = load_from_upload(uploaded)
 
         if st.button("Atualizar dados agora", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
 
     if df is None and monthly is None:
-        (df, monthly), _ = get_data()
+        (df, monthly, df_outros), _ = get_data()
 
     if df is None or monthly is None:
         st.error(
@@ -670,6 +687,8 @@ def main():
     if df.empty:
         st.warning("Nenhum dado encontrado na aba CONSOLIDADO.")
         st.stop()
+
+
 
     areas = sorted(df["AREA"].dropna().unique())
     docentes = sorted(df["DOCENTE"].dropna().unique())
@@ -742,8 +761,19 @@ def main():
 
     kpi_cards(n_instr, total_h_periodo, media_freq, total_h_ano)
 
-    tab_geral, tab_individual, tab_mes, tab_tabela = st.tabs(
-        ["Visão Geral", "Por Instrutor", "Por Mês", "Tabela"]
+    # Filtrar df_outros pelos mesmos docentes/meses selecionados
+    outros_f = None
+    if df_outros is not None and not df_outros.empty:
+        outros_f = df_outros[df_outros["MES"].isin(sel_meses)].copy()
+        if sel_docentes:
+            # Tenta match exato de nome normalizado
+            nomes_norm = set(d.strip().upper() for d in sel_docentes)
+            outros_f = outros_f[outros_f["DOCENTE"].str.upper().str.strip().apply(
+                lambda n: any(s in n or n in s for s in nomes_norm)
+            )]
+
+    tab_geral, tab_individual, tab_mes, tab_outros, tab_tabela = st.tabs(
+        ["Visão Geral", "Por Instrutor", "Por Mês", "⏱ Outros (não-aula)", "Tabela"]
     )
 
     # ------------------------------------------------------------------
@@ -961,9 +991,150 @@ def main():
                 chart_card(fig, height=380)
 
     # ------------------------------------------------------------------
+    # OUTROS (atividades não-sala-de-aula)
+    # ------------------------------------------------------------------
+    with tab_outros:
+        st.markdown(
+            """
+            <div style='color:#9CA3AF;font-size:13px;margin-bottom:12px'>
+            Horas de atividades <b>não-regência</b> (Planejamento, Reuniões, Capacitações,
+            Banco de Horas, Outros) lidas das abas individuais de cada instrutor.<br>
+            <span style='color:#F59E0B'>⚠ Instrutores sem a coluna <b>MODALIDADE</b> na aba individual ainda não aparecem aqui
+            — veja o guia de padronização para 2027.</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if outros_f is None or outros_f.empty:
+            st.info(
+                "Nenhum dado de 'Outros' encontrado para o período selecionado. "
+                "Isso ocorre quando nenhuma aba individual tem a coluna MODALIDADE preenchida."
+            )
+        else:
+            # Métricas rápidas
+            tem_modal = outros_f[outros_f["TEM_MODALIDADE"]]
+            total_outros = tem_modal["HORAS_OUTROS"].sum()
+            total_ferias = tem_modal["HORAS_FERIAS"].sum()
+            n_com_modal = tem_modal["DOCENTE"].nunique()
+            n_total_instrutores = df_f["DOCENTE"].nunique()
+
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Horas Outros (não-aula)", f"{total_outros:,.0f} h")
+            m2.metric("Horas Férias", f"{total_ferias:,.0f} h")
+            m3.metric("Instrutores c/ dados", f"{n_com_modal}")
+            m4.metric("Cobertura da planilha", f"{n_com_modal}/{n_total_instrutores}",
+                      help="Instrutores com aba individual padronizada (coluna MODALIDADE)")
+
+            st.markdown("---")
+
+            # --- Gráfico 1: Total de horas OUTROS por instrutor ---
+            section_title("Horas de atividades não-aula por instrutor")
+            outros_por_doc = (
+                tem_modal.groupby("DOCENTE")["HORAS_OUTROS"]
+                .sum()
+                .reset_index()
+                .sort_values("HORAS_OUTROS", ascending=False)
+            )
+            outros_por_doc = outros_por_doc[outros_por_doc["HORAS_OUTROS"] > 0]
+
+            if not outros_por_doc.empty:
+                row_pitch = 36
+                chart_h = max(300, row_pitch * len(outros_por_doc) + 80)
+                fig_o1 = px.bar(
+                    outros_por_doc,
+                    x="HORAS_OUTROS",
+                    y="DOCENTE",
+                    orientation="h",
+                    labels={"HORAS_OUTROS": "Horas (não-aula)", "DOCENTE": ""},
+                    color_discrete_sequence=["#F59E0B"],
+                )
+                fig_o1.update_traces(
+                    marker_line_width=0,
+                    hovertemplate="<b>%{y}</b><br>%{x:,.0f} horas não-aula<extra></extra>",
+                )
+                fig_o1.update_layout(yaxis_title=None, height=chart_h)
+                scroll_h = 500 if chart_h > 500 else None
+                chart_card(fig_o1, y_primary=True, scroll_height=scroll_h)
+            else:
+                st.info("Nenhuma hora de atividades não-aula registrada no período.")
+
+            # --- Gráfico 2: Outros por mês ---
+            col_om, col_ot = st.columns(2, gap="large")
+            with col_om:
+                section_title("Horas não-aula por mês")
+                outros_mes = (
+                    tem_modal.groupby("MES", observed=True)["HORAS_OUTROS"]
+                    .sum()
+                    .reset_index()
+                )
+                if not outros_mes.empty:
+                    fig_o2 = px.bar(
+                        outros_mes,
+                        x="MES",
+                        y="HORAS_OUTROS",
+                        labels={"MES": "Mês", "HORAS_OUTROS": "Horas"},
+                        color_discrete_sequence=["#F59E0B"],
+                    )
+                    fig_o2.update_traces(
+                        marker_line_width=0,
+                        hovertemplate="<b>%{x}</b><br>%{y:,.0f} horas<extra></extra>",
+                    )
+                    fig_o2.update_layout(height=360)
+                    chart_card(fig_o2, height=360)
+
+            with col_ot:
+                section_title("Férias por mês")
+                ferias_mes = (
+                    tem_modal.groupby("MES", observed=True)["HORAS_FERIAS"]
+                    .sum()
+                    .reset_index()
+                )
+                if not ferias_mes.empty:
+                    fig_o3 = px.bar(
+                        ferias_mes,
+                        x="MES",
+                        y="HORAS_FERIAS",
+                        labels={"MES": "Mês", "HORAS_FERIAS": "Horas"},
+                        color_discrete_sequence=["#6B7280"],
+                    )
+                    fig_o3.update_traces(
+                        marker_line_width=0,
+                        hovertemplate="<b>%{x}</b><br>%{y:,.0f} horas<extra></extra>",
+                    )
+                    fig_o3.update_layout(height=360)
+                    chart_card(fig_o3, height=360)
+
+            # --- Tabela detalhada ---
+            section_title("Detalhamento por instrutor e mês")
+            tabela_outros = (
+                tem_modal[tem_modal["HORAS_OUTROS"] > 0][
+                    ["DOCENTE", "MES", "HORAS_OUTROS", "HORAS_FERIAS", "HORAS_REGENCIA_IND"]
+                ]
+                .sort_values(["DOCENTE", "MES"])
+                .rename(columns={
+                    "HORAS_OUTROS": "Horas Outros",
+                    "HORAS_FERIAS": "Horas Férias",
+                    "HORAS_REGENCIA_IND": "Horas Regência (aba ind.)",
+                    "MES": "Mês",
+                    "DOCENTE": "Instrutor",
+                })
+            )
+            st.dataframe(tabela_outros, height=400, use_container_width=True)
+            csv_outros = tabela_outros.to_csv(index=False).encode("utf-8-sig")
+            st.download_button(
+                "Baixar Outros em CSV",
+                csv_outros,
+                "regencia_outros.csv",
+                "text/csv",
+                type="secondary",
+            )
+
+    # ------------------------------------------------------------------
     # TABELA
     # ------------------------------------------------------------------
     with tab_tabela:
+
         section_title("Dados consolidados")
         show = df_f.copy()
         show_cols = ["DOCENTE", "CARGA_HORARIA", "AREA", "POLO", "TOTAL_H_ANO", "EXTRA_QUADRO"]

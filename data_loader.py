@@ -1,3 +1,6 @@
+import io
+import re
+
 import pandas as pd
 
 MONTHS = [
@@ -29,6 +32,9 @@ MONTH_LABELS = [
     "Novembro",
     "Dezembro",
 ]
+
+MONTH_NUM_TO_LABEL = {str(i + 1).zfill(2): MONTH_LABELS[i] for i in range(12)}
+MONTH_NUM_TO_LABEL.update({str(i + 1): MONTH_LABELS[i] for i in range(12)})
 
 SHEET_NAME = "CONSOLIDADO "
 HEADER_ROW = 4
@@ -66,6 +72,15 @@ POLO_NORM = {
     "SENAI CANAÃ": POLO_DEFAULT,
     "SENAI VILA CANAÃ": POLO_DEFAULT,
 }
+
+# ---------------------------------------------------------------------------
+# Códigos de modalidade das abas individuais de instrutores
+# ---------------------------------------------------------------------------
+# Modalidades que NÃO são regência em sala de aula (atividades "OUTROS")
+# Conforme tabela CODIGO/MODALIDADES na planilha CONSOLIDADO.
+CODIGOS_OUTROS = {1, 2, 3, 4, 9}   # Planejamento, Reuniões, Capacitação, Banco de horas, Outros
+CODIGOS_REGENCIA = {11, 21, 24, 31, 33, 34, 35, 51}   # Modalidades de ensino/aprendizagem
+CODIGOS_FERIAS = {0}                # Férias — tratamos separado
 
 
 def _norm_polo(value):
@@ -233,3 +248,266 @@ def melt_monthly(df: pd.DataFrame) -> pd.DataFrame:
     merged = melted.merge(pcts, on=["DOCENTE", "MES"], how="left")
     merged["MES"] = pd.Categorical(merged["MES"], categories=MONTH_LABELS, ordered=True)
     return merged
+
+
+# ===========================================================================
+# Leitura de horas "OUTROS" das abas individuais dos instrutores
+# ===========================================================================
+
+def _extract_codigo_from_modalidade(text: str) -> int | None:
+    """
+    Extrai o código numérico de uma string de modalidade.
+    Exemplos:
+      '2-REUNIÕES'                         -> 2
+      '35-TÉCNICO DE NÍVEL MÉDIO'          -> 35
+      '51- Aperfeiçoamento profissional'   -> 51
+    Retorna None se não encontrar um número no início.
+    """
+    if not isinstance(text, str):
+        return None
+    m = re.match(r"^\s*(\d+)\s*[-–]", text.strip())
+    if m:
+        return int(m.group(1))
+    return None
+
+
+def _find_mes_col_in_block_header(row: list) -> int | None:
+    """
+    Dada a linha de header de um bloco mensal, retorna o índice da coluna
+    onde começa o número do mês (coluna logo após 'MÊS:').
+    Padrão: col X = 'MÊS:', col X+2 = '01'..'12'
+    """
+    for i, v in enumerate(row):
+        if isinstance(v, str) and "M" in v.upper() and "S" in v.upper() and ":" in v:
+            # Próxima coluna com valor não-nulo deve ser o número do mês
+            for j in range(i + 1, min(i + 5, len(row))):
+                cand = row[j]
+                if pd.notna(cand) and str(cand).strip() != "":
+                    return j
+    return None
+
+
+def _find_ano_in_block_header(row: list) -> str | None:
+    """
+    Retorna o ano (string ex: '2026') encontrado na linha de cabeçalho do bloco.
+    Procura 'ANO:' e pega o valor numérico após ele.
+    """
+    for i, v in enumerate(row):
+        if isinstance(v, str) and "ANO" in v.upper() and ":" in v:
+            for j in range(i + 1, min(i + 5, len(row))):
+                cand = row[j]
+                if pd.notna(cand):
+                    try:
+                        year = int(float(str(cand).strip()))
+                        if 2000 <= year <= 2100:
+                            return str(year)
+                    except (ValueError, TypeError):
+                        pass
+    return None
+
+
+def _detect_modalidade_col(block_header_row: list) -> int | None:
+    """
+    Detecta a coluna MODALIDADE no header de bloco (Padrão A).
+    Retorna o índice da coluna ou None se não houver.
+    """
+    for i, v in enumerate(block_header_row):
+        if isinstance(v, str) and "MODALIDADE" in v.strip().upper():
+            return i
+    return None
+
+
+def _detect_total_col(block_header_row: list) -> int | None:
+    """Detecta a coluna TOTAL MENSAL no header de bloco."""
+    for i, v in enumerate(block_header_row):
+        if isinstance(v, str) and "TOTAL" in v.strip().upper() and "MENSAL" in v.strip().upper():
+            return i
+    return None
+
+
+def _sum_outros_from_block(
+    df_inst: pd.DataFrame,
+    block_start: int,
+    next_block_start: int,
+    modalidade_col: int | None,
+    total_col: int | None,
+    target_year: int | None,
+) -> tuple[float, float, float]:
+    """
+    Varre um bloco mensal de uma aba individual e retorna:
+        (horas_regencia, horas_outros, horas_ferias)
+
+    Critério de classificação (Padrão A — tem coluna MODALIDADE):
+        - Lê o código na coluna MODALIDADE de cada linha de atividade.
+        - OUTROS  = códigos em CODIGOS_OUTROS  (1,2,3,4,9)
+        - FERIAS  = código 0
+        - REGENCIA = demais codes (11,21,24,31,33,34,35,51)
+
+    Critério de classificação (Padrão B — sem coluna MODALIDADE):
+        - Não há como distinguir automaticamente → retorna (0, 0, 0).
+    """
+    horas_regencia = 0.0
+    horas_outros = 0.0
+    horas_ferias = 0.0
+
+    if modalidade_col is None or total_col is None:
+        return horas_regencia, horas_outros, horas_ferias
+
+    # Percorre as linhas do bloco (excluindo a linha de cabeçalho = block_start + 2)
+    data_start_row = block_start + 2
+    for row_idx in range(data_start_row, next_block_start):
+        total_val = _to_num(df_inst.iloc[row_idx, total_col]) if total_col < df_inst.shape[1] else None
+        if total_val is None or total_val == 0:
+            continue
+
+        modalidade_val = df_inst.iloc[row_idx, modalidade_col] if modalidade_col < df_inst.shape[1] else None
+        if pd.isna(modalidade_val):
+            continue
+
+        modalidade_str = str(modalidade_val).strip()
+        codigo = _extract_codigo_from_modalidade(modalidade_str)
+        if codigo is None:
+            # Tenta tratar o próprio valor como número puro
+            try:
+                codigo = int(float(modalidade_str))
+            except (ValueError, TypeError):
+                continue
+
+        if codigo in CODIGOS_FERIAS:
+            horas_ferias += total_val
+        elif codigo in CODIGOS_OUTROS:
+            horas_outros += total_val
+        else:
+            # Trata como regência (qualquer outro código, incluindo os de sala de aula)
+            horas_regencia += total_val
+
+    return horas_regencia, horas_outros, horas_ferias
+
+
+def load_outros_por_instrutor(
+    source,
+    target_year: int = 2026,
+    skip_sheets: int = 3,
+) -> pd.DataFrame:
+    """
+    Lê todas as abas individuais dos instrutores (pós as N primeiras abas de controle)
+    e extrai as horas de atividades "OUTROS" (não-sala-de-aula) por mês.
+
+    Parâmetros
+    ----------
+    source      : caminho para o arquivo .xlsx ou BytesIO
+    target_year : ano de interesse (filtra blocos por ANO:)
+    skip_sheets : quantidade de abas iniciais a pular (DADOS, MODELO SEDUC, CONSOLIDADO)
+
+    Retorna
+    -------
+    DataFrame com colunas:
+        DOCENTE, MES (label ptBR), HORAS_OUTROS, HORAS_FERIAS, TEM_MODALIDADE
+    """
+    xl = pd.ExcelFile(source)
+    all_sheets = xl.sheet_names
+    instructor_sheets = all_sheets[skip_sheets:]
+
+    records = []
+
+    for sheet_name in instructor_sheets:
+        try:
+            df_inst = pd.read_excel(xl, sheet_name=sheet_name, header=None)
+        except Exception:
+            continue
+
+        # Descobrir o nome do docente (linha 4 ou 7 costuma ter o nome)
+        docente_name = None
+        for search_row in range(0, min(10, len(df_inst))):
+            for col_idx in range(min(6, df_inst.shape[1])):
+                cell = df_inst.iloc[search_row, col_idx]
+                if isinstance(cell, str) and len(cell.strip()) > 3:
+                    text = cell.strip()
+                    # Heurística: linhas de cabeçalho institucional são ignoradas
+                    if any(skip in text.upper() for skip in ("SENAI", "ESCOLA", "DEPARTAMENTO", "REGÊNCIA", "REGENCIA")):
+                        continue
+                    docente_name = text.upper()
+                    break
+            if docente_name:
+                break
+
+        if not docente_name:
+            docente_name = sheet_name.strip().upper()
+
+        # Encontrar blocos mensais: linha com 'MÊS:' e 'ANO:'
+        block_starts = []
+        for i in range(len(df_inst)):
+            row_list = df_inst.iloc[i, :].tolist()
+            mes_col_idx = _find_mes_col_in_block_header(row_list)
+            if mes_col_idx is None:
+                continue
+            ano_str = _find_ano_in_block_header(row_list)
+            if ano_str is None:
+                continue
+            if int(ano_str) != target_year:
+                continue
+            # Capturar número do mês
+            mes_raw = str(df_inst.iloc[i, mes_col_idx]).strip().lstrip("0") or "0"
+            try:
+                mes_num = int(float(mes_raw))
+            except (ValueError, TypeError):
+                continue
+            if not (1 <= mes_num <= 12):
+                continue
+            block_starts.append((i, mes_num))
+
+        if not block_starts:
+            continue
+
+        # Para cada bloco, procurar a linha de header do bloco (EVENTO / MODALIDADE / ...)
+        # e identificar colunas relevantes
+        for b_idx, (block_row, mes_num) in enumerate(block_starts):
+            next_block_row = block_starts[b_idx + 1][0] if b_idx + 1 < len(block_starts) else len(df_inst)
+
+            # Linha de cabeçalho do bloco: geralmente block_row + 1
+            header_candidates = range(block_row + 1, min(block_row + 4, next_block_row))
+            block_header_row_data = None
+            block_header_row_idx = None
+            for hc in header_candidates:
+                row_data = df_inst.iloc[hc, :].tolist()
+                if any(isinstance(v, str) and "EVENTO" in v.upper() for v in row_data):
+                    block_header_row_data = row_data
+                    block_header_row_idx = hc
+                    break
+
+            if block_header_row_data is None:
+                continue
+
+            modalidade_col = _detect_modalidade_col(block_header_row_data)
+            total_col = _detect_total_col(block_header_row_data)
+
+            mes_label = MONTH_LABELS[mes_num - 1]
+
+            horas_reg, horas_outros, horas_ferias = _sum_outros_from_block(
+                df_inst,
+                block_header_row_idx,
+                next_block_row,
+                modalidade_col,
+                total_col,
+                target_year,
+            )
+
+            records.append({
+                "DOCENTE": docente_name,
+                "MES": mes_label,
+                "MES_NUM": mes_num,
+                "HORAS_OUTROS": horas_outros,
+                "HORAS_FERIAS": horas_ferias,
+                "HORAS_REGENCIA_IND": horas_reg,
+                "TEM_MODALIDADE": modalidade_col is not None,
+            })
+
+    if not records:
+        return pd.DataFrame(columns=[
+            "DOCENTE", "MES", "MES_NUM", "HORAS_OUTROS", "HORAS_FERIAS",
+            "HORAS_REGENCIA_IND", "TEM_MODALIDADE",
+        ])
+
+    result = pd.DataFrame(records)
+    result["MES"] = pd.Categorical(result["MES"], categories=MONTH_LABELS, ordered=True)
+    return result
