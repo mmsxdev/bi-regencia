@@ -1,5 +1,6 @@
 import io
 import re
+from typing import Optional
 
 import pandas as pd
 
@@ -254,7 +255,7 @@ def melt_monthly(df: pd.DataFrame) -> pd.DataFrame:
 # Leitura de horas "OUTROS" das abas individuais dos instrutores
 # ===========================================================================
 
-def _extract_codigo_from_modalidade(text: str) -> int | None:
+def _extract_codigo_from_modalidade(text: str) -> Optional[int]:
     """
     Extrai o código numérico de uma string de modalidade.
     Exemplos:
@@ -271,7 +272,7 @@ def _extract_codigo_from_modalidade(text: str) -> int | None:
     return None
 
 
-def _find_mes_col_in_block_header(row: list) -> int | None:
+def _find_mes_col_in_block_header(row: list) -> Optional[int]:
     """
     Dada a linha de header de um bloco mensal, retorna o índice da coluna
     onde começa o número do mês (coluna logo após 'MÊS:').
@@ -287,7 +288,7 @@ def _find_mes_col_in_block_header(row: list) -> int | None:
     return None
 
 
-def _find_ano_in_block_header(row: list) -> str | None:
+def _find_ano_in_block_header(row: list) -> Optional[str]:
     """
     Retorna o ano (string ex: '2026') encontrado na linha de cabeçalho do bloco.
     Procura 'ANO:' e pega o valor numérico após ele.
@@ -306,7 +307,7 @@ def _find_ano_in_block_header(row: list) -> str | None:
     return None
 
 
-def _detect_modalidade_col(block_header_row: list) -> int | None:
+def _detect_modalidade_col(block_header_row: list) -> Optional[int]:
     """
     Detecta a coluna MODALIDADE no header de bloco (Padrão A).
     Retorna o índice da coluna ou None se não houver.
@@ -317,7 +318,7 @@ def _detect_modalidade_col(block_header_row: list) -> int | None:
     return None
 
 
-def _detect_total_col(block_header_row: list) -> int | None:
+def _detect_total_col(block_header_row: list) -> Optional[int]:
     """Detecta a coluna TOTAL MENSAL no header de bloco."""
     for i, v in enumerate(block_header_row):
         if isinstance(v, str) and "TOTAL" in v.strip().upper() and "MENSAL" in v.strip().upper():
@@ -329,9 +330,9 @@ def _sum_outros_from_block(
     df_inst: pd.DataFrame,
     block_start: int,
     next_block_start: int,
-    modalidade_col: int | None,
-    total_col: int | None,
-    target_year: int | None,
+    modalidade_col: Optional[int],
+    total_col: Optional[int],
+    target_year: Optional[int],
 ) -> tuple[float, float, float]:
     """
     Varre um bloco mensal de uma aba individual e retorna:
