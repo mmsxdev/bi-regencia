@@ -765,12 +765,30 @@ def main():
     outros_f = None
     if df_outros is not None and not df_outros.empty:
         outros_f = df_outros[df_outros["MES"].isin(sel_meses)].copy()
+
+        # Mapear AREA e POLO do consolidado para permitir filtros cruzados
+        if not df.empty:
+            doc_map = df[["DOCENTE", "AREA", "POLO"]].drop_duplicates()
+            def _find_doc_attr(doc_name, col):
+                d_clean = " ".join(str(doc_name).upper().split())
+                for _, r in doc_map.iterrows():
+                    t_clean = " ".join(str(r["DOCENTE"]).upper().split())
+                    if d_clean == t_clean or d_clean in t_clean or t_clean in d_clean:
+                        return r[col]
+                return None
+
+            outros_f["AREA"] = outros_f["DOCENTE"].apply(lambda d: _find_doc_attr(d, "AREA"))
+            outros_f["POLO"] = outros_f["DOCENTE"].apply(lambda d: _find_doc_attr(d, "POLO"))
+
         if sel_docentes:
-            # Tenta match exato de nome normalizado
             nomes_norm = set(d.strip().upper() for d in sel_docentes)
             outros_f = outros_f[outros_f["DOCENTE"].str.upper().str.strip().apply(
                 lambda n: any(s in n or n in s for s in nomes_norm)
             )]
+        if sel_areas and "AREA" in outros_f.columns:
+            outros_f = outros_f[outros_f["AREA"].isin(sel_areas)]
+        if sel_polos and "POLO" in outros_f.columns:
+            outros_f = outros_f[outros_f["POLO"].isin(sel_polos)]
 
     tab_geral, tab_individual, tab_mes, tab_outros, tab_tabela = st.tabs(
         ["Visão Geral", "Por Instrutor", "Por Mês", "⏱ Outros (não-aula)", "Tabela"]
@@ -1034,7 +1052,7 @@ def main():
                 tem_modal.groupby("DOCENTE")["HORAS_OUTROS"]
                 .sum()
                 .reset_index()
-                .sort_values("HORAS_OUTROS", ascending=False)
+                .sort_values("HORAS_OUTROS", ascending=True)
             )
             outros_por_doc = outros_por_doc[outros_por_doc["HORAS_OUTROS"] > 0]
 

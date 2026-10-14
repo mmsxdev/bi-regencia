@@ -1,6 +1,7 @@
 import io
 import re
 from typing import Optional
+import unicodedata
 
 import pandas as pd
 
@@ -45,10 +46,6 @@ DATA_START = 6
 # ---------------------------------------------------------------------------
 # Normalização de áreas técnicas
 # ---------------------------------------------------------------------------
-# O painel unifica nomes duplicados/errôneos digitados na planilha para que a
-# análise por área não fique fragmentada. Ex.: "Manutenção automotiva (JD)"
-# era um rótulo interno do polo de treinamento John Deere da MESMA área.
-# As chaves estão em MAIÚSCULO (comparação case-insensitive).
 AREA_NORM = {
     "MANUTENÇÃO AUTOMOTIVA (JD)": "Manutenção automotiva",
     "CONTRUÇÃO CIVIL": "Construção Civil",
@@ -56,17 +53,10 @@ AREA_NORM = {
 }
 
 # Polo/local de regência
-# - Se a planilha tiver uma coluna POLO/LOCAL (na linha de cabeçalho), ela é lida.
-# - Se não existir (ou célula vazia), o valor é inferido a partir do rótulo antigo:
-#   "(JD)" -> polo do treinamento John Deere; demais -> unidade-base (o Complexo).
-# - Variações antigas do nome da unidade ("Vila Canaã", "Canaã") são normalizadas
-#   para o nome oficial: Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas.
-# Recomenda-se que a coordenação preencha POLO/LOCAL para todos os instrutores.
 POLO_DEFAULT = "Complexo de Educação, Tecnologia, Inovação e Saúde Paulo Vargas"
 POLO_JD_LEGACY = "John Deere"
 POLO_HEADERS = ("POLO", "LOCAL", "LOCAL DE REGÊNCIA", "LOCAL DE REGENCIA", "POLO/LOCAL", "POLO / LOCAL")
 
-# Normaliza variações do nome da unidade-base para o nome oficial da instituição.
 POLO_NORM = {
     "VILA CANAÃ": POLO_DEFAULT,
     "CANAÃ": POLO_DEFAULT,
@@ -77,11 +67,9 @@ POLO_NORM = {
 # ---------------------------------------------------------------------------
 # Códigos de modalidade das abas individuais de instrutores
 # ---------------------------------------------------------------------------
-# Modalidades que NÃO são regência em sala de aula (atividades "OUTROS")
-# Conforme tabela CODIGO/MODALIDADES na planilha CONSOLIDADO.
 CODIGOS_OUTROS = {1, 2, 3, 4, 9}   # Planejamento, Reuniões, Capacitação, Banco de horas, Outros
 CODIGOS_REGENCIA = {11, 21, 24, 31, 33, 34, 35, 51}   # Modalidades de ensino/aprendizagem
-CODIGOS_FERIAS = {0}                # Férias — tratamos separado
+CODIGOS_FERIAS = {0}                # Férias
 
 
 def _norm_polo(value):
@@ -126,12 +114,10 @@ def _to_num(value):
 def _find_month_columns(header4: list) -> dict:
     cols = {}
     for month in MONTHS:
-        # Try exact match first (primary columns without "2" suffix)
         match = [i for i, v in enumerate(header4) if isinstance(v, str) and v.strip() == month]
         if match:
             cols[month] = match[0]
         else:
-            # Try startswith as fallback
             match = [i for i, v in enumerate(header4) if isinstance(v, str) and v.strip().startswith(month)]
             if match:
                 cols[month] = match[0]
@@ -160,18 +146,13 @@ def load_regencia(source) -> pd.DataFrame:
         nome = df.iloc[idx, 0]
         if pd.isna(nome):
             continue
-        # Skip rows where column 0 is a code number (modalities section at bottom),
-        # not an instructor name. Main instructors have names with letters.
         nome_str = str(nome).strip()
         if not any(c.isalpha() for c in nome_str):
             continue
-        # Also skip modality rows: check if column 2 is "CARGA HORÁRIA" or 0
-        # (main instructors have actual area names in column 2)
         area_raw = df.iloc[idx, 2]
         area_str = str(area_raw).strip() if pd.notna(area_raw) else ""
         if area_str in ("0", "CARGA HORÁRIA", "CARGA HORARIA", "Carga Horária", "Carga Horaria", "SEM ÁREA"):
             continue
-        # Skip rows where all month data is NaN (modalities section has no H_AULA/PCT)
         has_month_data = False
         for m in MONTHS:
             if m in month_cols:
@@ -192,7 +173,6 @@ def load_regencia(source) -> pd.DataFrame:
             v = df.iloc[idx, polo_col]
             polo = str(v).strip() if pd.notna(v) and str(v).strip() else None
         if not polo:
-            # Inferência: rótulo antigo (JD) = polo do treinamento John Deere
             polo = POLO_JD_LEGACY if "(JD)" in area_upper else POLO_DEFAULT
         polo = _norm_polo(polo)
 
@@ -255,14 +235,63 @@ def melt_monthly(df: pd.DataFrame) -> pd.DataFrame:
 # Leitura de horas "OUTROS" das abas individuais dos instrutores
 # ===========================================================================
 
+def _norm_text(s: str) -> str:
+    """Normaliza texto: sem acentos, maiúsculo e sem espaços extras."""
+    if not isinstance(s, str):
+        return ""
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().upper().strip()
+
+
+def _classify_text_activity(text: str) -> Optional[str]:
+    """
+    Classifica texto de atividade quando não há código numérico explícito.
+    Retorna 'FERIAS', 'OUTROS', ou None.
+    """
+    n = _norm_text(text)
+    if not n:
+        return None
+
+    # Férias / Recesso
+    if any(k in n for k in ["FERIAS", "0-FERIAS", "RECESSO"]):
+        return "FERIAS"
+
+    # Códigos de outros embutidos
+    if any(k in n for k in ["1-PLANEJAMENTO", "2-REUNIOES", "3-CAPACITACAO", "4-BANCO DE HORAS", "9-OUTROS"]):
+        return "OUTROS"
+
+    # Atividades de Planejamento (evitando disciplinas de cursos que contêm a palavra)
+    if any(k in n for k in ["PLANEJAMENTO", "PLANO DE AULA", "PREPARACAO DE AULA"]):
+        if not any(course in n for course in ["OP TI", "PINTOR", "TECNICO", "CURSO", "DISCIPLINA", "EDIFICACOES"]):
+            return "OUTROS"
+
+    # Reuniões
+    if any(k in n for k in ["REUNIAO", "REUNIOES", "MEETING", "CONSELHO DE CLASSE", "ALINHAMENTO"]):
+        return "OUTROS"
+
+    # Capacitação / Treinamento docente / Visita técnica
+    if any(k in n for k in ["CAPACITACAO DOCENTE", "TREINAMENTO DOCENTE", "CAPACITACAO GEMINY", "CAPACITACAO GEP", "VISITA TECNICA", "VISITA PEDAGOGICA", "WORKSHOP DOCENTE"]):
+        return "OUTROS"
+
+    # Banco de horas
+    if any(k in n for k in ["BANCO DE HORAS", "COMPENSACAO DE BANCO"]):
+        return "OUTROS"
+
+    return None
+
+
+def _clean_docente_name(name: str) -> str:
+    """Remove sufixos de carga horária como '- 15 HORAS SEMANAL' ou ' - CONSTRUÇÃO CIVIL'."""
+    if not isinstance(name, str):
+        return ""
+    cleaned = re.sub(r"[-\s]+\d+\s*H(ORAS)?\s*(SEMANAL)?.*$", "", name, flags=re.IGNORECASE).strip()
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return cleaned.upper()
+
+
 def _extract_codigo_from_modalidade(text: str) -> Optional[int]:
     """
     Extrai o código numérico de uma string de modalidade.
-    Exemplos:
-      '2-REUNIÕES'                         -> 2
-      '35-TÉCNICO DE NÍVEL MÉDIO'          -> 35
-      '51- Aperfeiçoamento profissional'   -> 51
-    Retorna None se não encontrar um número no início.
+    Exemplos: '2-REUNIÕES' -> 2, '35-TÉCNICO DE NÍVEL MÉDIO' -> 35
     """
     if not isinstance(text, str):
         return None
@@ -273,14 +302,9 @@ def _extract_codigo_from_modalidade(text: str) -> Optional[int]:
 
 
 def _find_mes_col_in_block_header(row: list) -> Optional[int]:
-    """
-    Dada a linha de header de um bloco mensal, retorna o índice da coluna
-    onde começa o número do mês (coluna logo após 'MÊS:').
-    Padrão: col X = 'MÊS:', col X+2 = '01'..'12'
-    """
+    """Retorna o índice da coluna com o número do mês (logo após 'MÊS:')."""
     for i, v in enumerate(row):
         if isinstance(v, str) and "M" in v.upper() and "S" in v.upper() and ":" in v:
-            # Próxima coluna com valor não-nulo deve ser o número do mês
             for j in range(i + 1, min(i + 5, len(row))):
                 cand = row[j]
                 if pd.notna(cand) and str(cand).strip() != "":
@@ -289,10 +313,7 @@ def _find_mes_col_in_block_header(row: list) -> Optional[int]:
 
 
 def _find_ano_in_block_header(row: list) -> Optional[str]:
-    """
-    Retorna o ano (string ex: '2026') encontrado na linha de cabeçalho do bloco.
-    Procura 'ANO:' e pega o valor numérico após ele.
-    """
+    """Retorna o ano (string '2026') logo após 'ANO:'."""
     for i, v in enumerate(row):
         if isinstance(v, str) and "ANO" in v.upper() and ":" in v:
             for j in range(i + 1, min(i + 5, len(row))):
@@ -307,22 +328,44 @@ def _find_ano_in_block_header(row: list) -> Optional[str]:
     return None
 
 
-def _detect_modalidade_col(block_header_row: list) -> Optional[int]:
+def _detect_modalidade_col(
+    block_header_row: list,
+    df_inst: Optional[pd.DataFrame] = None,
+    block_header_row_idx: Optional[int] = None,
+    next_block_row: Optional[int] = None,
+) -> Optional[int]:
     """
-    Detecta a coluna MODALIDADE no header de bloco (Padrão A).
-    Retorna o índice da coluna ou None se não houver.
+    Detecta a coluna MODALIDADE:
+    1. Procura 'MODALIDADE' no cabeçalho do bloco.
+    2. Se não encontrar, inspeciona as primeiras 15 linhas de dados procurando células com 'CÓDIGO-TEXTO'.
     """
     for i, v in enumerate(block_header_row):
         if isinstance(v, str) and "MODALIDADE" in v.strip().upper():
             return i
+
+    if df_inst is not None and block_header_row_idx is not None and next_block_row is not None:
+        scan_limit = min(block_header_row_idx + 15, next_block_row)
+        for r_scan in range(block_header_row_idx + 1, scan_limit):
+            for c_scan in range(min(5, df_inst.shape[1])):
+                val = df_inst.iloc[r_scan, c_scan]
+                if pd.notna(val) and _extract_codigo_from_modalidade(str(val)) is not None:
+                    return c_scan
+
     return None
+
+
+def _detect_componente_col(block_header_row: list, modalidade_col: Optional[int] = None) -> int:
+    """Detecta a coluna COMPONENTE / ATIVIDADE."""
+    for i, v in enumerate(block_header_row):
+        if isinstance(v, str) and ("COMPONENTE" in v.strip().upper() or "ATIVIDADE" in v.strip().upper()):
+            return i
+    return 1 if modalidade_col != 1 else 2
 
 
 def _detect_total_col(block_header_row: list) -> Optional[int]:
     """
     Detecta a coluna de total mensal no header de bloco.
-    Aceita variacoes: TOTAL MENSAL, Total Mensal, TOTAL MES, TOTAL MES, TOTAL (fallback).
-    Prioridade: match TOTAL+MENSAL/MES; fallback: ultimo match de TOTAL.
+    Aceita: TOTAL MENSAL, Total Mensal, TOTAL MES, TOTAL MÊS, TOTAL (fallback).
     """
     def _n(s):
         return (
@@ -351,56 +394,74 @@ def _sum_outros_from_block(
     modalidade_col: Optional[int],
     total_col: Optional[int],
     target_year: Optional[int],
+    comp_col: Optional[int] = None,
 ) -> tuple:
     """
-    Varre um bloco mensal de uma aba individual e retorna:
-        (horas_regencia, horas_outros, horas_ferias)
-
-    Critério de classificação (Padrão A — tem coluna MODALIDADE):
-        - Lê o código na coluna MODALIDADE de cada linha de atividade.
-        - OUTROS  = códigos em CODIGOS_OUTROS  (1,2,3,4,9)
-        - FERIAS  = código 0
-        - REGENCIA = demais codes (11,21,24,31,33,34,35,51)
-
-    Critério de classificação (Padrão B — sem coluna MODALIDADE):
-        - Não há como distinguir automaticamente → retorna (0, 0, 0).
+    Varre um bloco mensal e classifica cada linha com horas registradas:
+        - Código numérico (0=Férias, 1..9=Outros, demais=Regência)
+        - Classificação textual (se não houver código explícito)
+    Retorna: (horas_regencia, horas_outros, horas_ferias)
     """
     horas_regencia = 0.0
     horas_outros = 0.0
     horas_ferias = 0.0
 
-    if modalidade_col is None or total_col is None:
+    if total_col is None:
         return horas_regencia, horas_outros, horas_ferias
 
-    # Percorre as linhas do bloco (excluindo a linha de cabeçalho = block_start + 2)
     data_start_row = block_start + 2
     for row_idx in range(data_start_row, next_block_start):
+        # Ignora linhas de cabeçalho interno ou totalizadores
+        val_ev = str(df_inst.iloc[row_idx, 0]).strip().upper() if df_inst.shape[1] > 0 else ""
+        if "TOTAL" in val_ev or "MÊS" in val_ev or "MES" in val_ev:
+            continue
+
         total_val = _to_num(df_inst.iloc[row_idx, total_col]) if total_col < df_inst.shape[1] else None
         if total_val is None or total_val == 0:
             continue
 
-        modalidade_val = df_inst.iloc[row_idx, modalidade_col] if modalidade_col < df_inst.shape[1] else None
-        if pd.isna(modalidade_val):
-            continue
+        classified = False
 
-        # Remove espacos nao-quebraveis (\xa0) e outros whitespace invisiveis
-        modalidade_str = str(modalidade_val).replace("\xa0", " ").strip()
-        if not modalidade_str:
-            continue
-        codigo = _extract_codigo_from_modalidade(modalidade_str)
-        if codigo is None:
-            # Tenta tratar o próprio valor como número puro
-            try:
-                codigo = int(float(modalidade_str))
-            except (ValueError, TypeError):
-                continue
+        # 1. Classificação por código numérico na coluna modalidade
+        if modalidade_col is not None and modalidade_col < df_inst.shape[1]:
+            modalidade_val = df_inst.iloc[row_idx, modalidade_col]
+            if pd.notna(modalidade_val):
+                modalidade_str = str(modalidade_val).replace("\xa0", " ").strip()
+                codigo = _extract_codigo_from_modalidade(modalidade_str)
+                if codigo is None:
+                    try:
+                        codigo = int(float(modalidade_str))
+                    except (ValueError, TypeError):
+                        pass
 
-        if codigo in CODIGOS_FERIAS:
-            horas_ferias += total_val
-        elif codigo in CODIGOS_OUTROS:
-            horas_outros += total_val
-        else:
-            # Trata como regência (qualquer outro código, incluindo os de sala de aula)
+                if codigo is not None:
+                    if codigo in CODIGOS_FERIAS:
+                        horas_ferias += total_val
+                    elif codigo in CODIGOS_OUTROS:
+                        horas_outros += total_val
+                    else:
+                        horas_regencia += total_val
+                    classified = True
+
+        # 2. Classificação textual de fallback (para abas com texto livre)
+        if not classified:
+          chk_cols = [comp_col, modalidade_col, 0, 1, 2]
+          for c_chk in chk_cols:
+              if c_chk is not None and c_chk < df_inst.shape[1]:
+                  txt_val = df_inst.iloc[row_idx, c_chk]
+                  if pd.notna(txt_val) and isinstance(txt_val, str):
+                      cat = _classify_text_activity(txt_val)
+                      if cat == "FERIAS":
+                          horas_ferias += total_val
+                          classified = True
+                          break
+                      elif cat == "OUTROS":
+                          horas_outros += total_val
+                          classified = True
+                          break
+
+        # 3. Se teve total_val mas não foi Férias nem Outros, contabiliza como regência
+        if not classified:
             horas_regencia += total_val
 
     return horas_regencia, horas_outros, horas_ferias
@@ -412,19 +473,8 @@ def load_outros_por_instrutor(
     skip_sheets: int = 3,
 ) -> pd.DataFrame:
     """
-    Lê todas as abas individuais dos instrutores (pós as N primeiras abas de controle)
-    e extrai as horas de atividades "OUTROS" (não-sala-de-aula) por mês.
-
-    Parâmetros
-    ----------
-    source      : caminho para o arquivo .xlsx ou BytesIO
-    target_year : ano de interesse (filtra blocos por ANO:)
-    skip_sheets : quantidade de abas iniciais a pular (DADOS, MODELO SEDUC, CONSOLIDADO)
-
-    Retorna
-    -------
-    DataFrame com colunas:
-        DOCENTE, MES (label ptBR), HORAS_OUTROS, HORAS_FERIAS, TEM_MODALIDADE
+    Lê todas as abas individuais dos instrutores e extrai as horas de atividades
+    'OUTROS' (não-sala-de-aula) e 'FÉRIAS' por mês.
     """
     xl = pd.ExcelFile(source)
     all_sheets = xl.sheet_names
@@ -438,25 +488,24 @@ def load_outros_por_instrutor(
         except Exception:
             continue
 
-        # Descobrir o nome do docente (linha 4 ou 7 costuma ter o nome)
+        # Nome do docente
         docente_name = None
         for search_row in range(0, min(10, len(df_inst))):
             for col_idx in range(min(6, df_inst.shape[1])):
                 cell = df_inst.iloc[search_row, col_idx]
                 if isinstance(cell, str) and len(cell.strip()) > 3:
                     text = cell.strip()
-                    # Heurística: linhas de cabeçalho institucional são ignoradas
                     if any(skip in text.upper() for skip in ("SENAI", "ESCOLA", "DEPARTAMENTO", "REGÊNCIA", "REGENCIA")):
                         continue
-                    docente_name = text.upper()
+                    docente_name = _clean_docente_name(text)
                     break
             if docente_name:
                 break
 
         if not docente_name:
-            docente_name = sheet_name.strip().upper()
+            docente_name = _clean_docente_name(sheet_name)
 
-        # Encontrar blocos mensais: linha com 'MÊS:' e 'ANO:'
+        # Encontrar blocos mensais do ano de interesse
         block_starts = []
         for i in range(len(df_inst)):
             row_list = df_inst.iloc[i, :].tolist()
@@ -464,11 +513,8 @@ def load_outros_por_instrutor(
             if mes_col_idx is None:
                 continue
             ano_str = _find_ano_in_block_header(row_list)
-            if ano_str is None:
+            if ano_str is None or int(ano_str) != target_year:
                 continue
-            if int(ano_str) != target_year:
-                continue
-            # Capturar número do mês
             mes_raw = str(df_inst.iloc[i, mes_col_idx]).strip().lstrip("0") or "0"
             try:
                 mes_num = int(float(mes_raw))
@@ -481,13 +527,10 @@ def load_outros_por_instrutor(
         if not block_starts:
             continue
 
-        # Para cada bloco, procurar a linha de header do bloco (EVENTO / MODALIDADE / ...)
-        # e identificar colunas relevantes
         for b_idx, (block_row, mes_num) in enumerate(block_starts):
             next_block_row = block_starts[b_idx + 1][0] if b_idx + 1 < len(block_starts) else len(df_inst)
 
-            # Linha de cabeçalho do bloco: geralmente block_row + 1
-            header_candidates = range(block_row + 1, min(block_row + 4, next_block_row))
+            header_candidates = range(block_row + 1, min(block_row + 5, next_block_row))
             block_header_row_data = None
             block_header_row_idx = None
             for hc in header_candidates:
@@ -500,8 +543,14 @@ def load_outros_por_instrutor(
             if block_header_row_data is None:
                 continue
 
-            modalidade_col = _detect_modalidade_col(block_header_row_data)
+            modalidade_col = _detect_modalidade_col(
+                block_header_row_data,
+                df_inst=df_inst,
+                block_header_row_idx=block_header_row_idx,
+                next_block_row=next_block_row,
+            )
             total_col = _detect_total_col(block_header_row_data)
+            comp_col = _detect_componente_col(block_header_row_data, modalidade_col)
 
             mes_label = MONTH_LABELS[mes_num - 1]
 
@@ -512,6 +561,7 @@ def load_outros_por_instrutor(
                 modalidade_col,
                 total_col,
                 target_year,
+                comp_col=comp_col,
             )
 
             records.append({
@@ -521,7 +571,7 @@ def load_outros_por_instrutor(
                 "HORAS_OUTROS": horas_outros,
                 "HORAS_FERIAS": horas_ferias,
                 "HORAS_REGENCIA_IND": horas_reg,
-                "TEM_MODALIDADE": modalidade_col is not None,
+                "TEM_MODALIDADE": (modalidade_col is not None) or ((horas_outros + horas_ferias) > 0),
             })
 
     if not records:
