@@ -319,11 +319,29 @@ def _detect_modalidade_col(block_header_row: list) -> Optional[int]:
 
 
 def _detect_total_col(block_header_row: list) -> Optional[int]:
-    """Detecta a coluna TOTAL MENSAL no header de bloco."""
+    """
+    Detecta a coluna de total mensal no header de bloco.
+    Aceita variacoes: TOTAL MENSAL, Total Mensal, TOTAL MES, TOTAL MES, TOTAL (fallback).
+    Prioridade: match TOTAL+MENSAL/MES; fallback: ultimo match de TOTAL.
+    """
+    def _n(s):
+        return (
+            s.upper()
+             .replace("\u00ca", "E").replace("\u00c9", "E")
+             .replace("\u00e3", "A").replace("\u00c3", "A")
+             .replace("\u00e2", "A").replace("\u00c2", "A")
+             .replace("\u00e7", "C").replace("\u00c7", "C")
+        )
+    fallback = None
     for i, v in enumerate(block_header_row):
-        if isinstance(v, str) and "TOTAL" in v.strip().upper() and "MENSAL" in v.strip().upper():
+        if not isinstance(v, str):
+            continue
+        n = _n(v.strip())
+        if "TOTAL" in n and ("MENSAL" in n or "MES" in n):
             return i
-    return None
+        if "TOTAL" in n:
+            fallback = i
+    return fallback
 
 
 def _sum_outros_from_block(
@@ -333,7 +351,7 @@ def _sum_outros_from_block(
     modalidade_col: Optional[int],
     total_col: Optional[int],
     target_year: Optional[int],
-) -> tuple[float, float, float]:
+) -> tuple:
     """
     Varre um bloco mensal de uma aba individual e retorna:
         (horas_regencia, horas_outros, horas_ferias)
@@ -365,7 +383,10 @@ def _sum_outros_from_block(
         if pd.isna(modalidade_val):
             continue
 
-        modalidade_str = str(modalidade_val).strip()
+        # Remove espacos nao-quebraveis (\xa0) e outros whitespace invisiveis
+        modalidade_str = str(modalidade_val).replace("\xa0", " ").strip()
+        if not modalidade_str:
+            continue
         codigo = _extract_codigo_from_modalidade(modalidade_str)
         if codigo is None:
             # Tenta tratar o próprio valor como número puro
